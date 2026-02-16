@@ -329,7 +329,7 @@ public function dashboard()
     $schoolTitle = null;
     $schoolId = null;
     $schoolMetaKeyUsed = null;
-    $stats = ['answered' => 0, 'spent' => '—', 'spent_seconds' => 0];
+    $stats = ['answered' => 0, 'spent' => 'ï¿½', 'spent_seconds' => 0];
 
     if ($isSchoolAdmin) {
         $possibleSchoolKeys = ['school_post_id', 'associated_school', 'school', 'school_id', 'acf_school'];
@@ -428,7 +428,7 @@ public function dashboard()
 
                 $hours = intdiv($timeSecs30, 3600);
                 $mins  = intdiv($timeSecs30 % 3600, 60);
-                $spentHuman = $timeSecs30 > 0 ? sprintf('%d hr %d min', $hours, $mins) : '—';
+                $spentHuman = $timeSecs30 > 0 ? sprintf('%d hr %d min', $hours, $mins) : 'ï¿½';
 
                 $stats = [
                     'answered'       => $answered30,
@@ -573,16 +573,16 @@ public function dashboard()
                 }
             }
 
-            // “Scaled” score derived from percent (simple 0–36 map)
+            // ï¿½Scaledï¿½ score derived from percent (simple 0ï¿½36 map)
             $scaled_score = $accuracy_pct !== null ? (int) round($accuracy_pct * 0.36) : null;
 
-            // Questions in the last 7 days (for “Questions / Week” KPI)
+            // Questions in the last 7 days (for ï¿½Questions / Weekï¿½ KPI)
             $weekStart = now()->startOfDay()->subDays(6);
             $questions_week = (int) (clone $base)
                 ->where('tr.created_at', '>=', $weekStart)
                 ->count();
 
-            // Weekly sparkline: questions per Mon–Sun week, last N weeks
+            // Weekly sparkline: questions per Monï¿½Sun week, last N weeks
             $spark = [];
             for ($i = $weeksBack - 1; $i >= 0; $i--) {
                 $start = now()->copy()->startOfWeek()->subWeeks($i);
@@ -607,8 +607,8 @@ public function dashboard()
 
             $studentMetrics[$key] = [
                 'title'          => $subj,
-                'score'          => $scaled_score,           // 0–36
-                'accuracy'       => $accuracy_pct,           // 0–100
+                'score'          => $scaled_score,           // 0ï¿½36
+                'accuracy'       => $accuracy_pct,           // 0ï¿½100
                 'time_minutes'   => $time_minutes_30,        // minutes (last 30d)
                 'tests'          => $tests_count_30,         // distinct tests (last 30d)
                 'questions_week' => $questions_week,         // last 7 days

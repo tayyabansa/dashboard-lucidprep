@@ -17,10 +17,16 @@ use Illuminate\Support\Facades\Log;
 
 class TestController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         $user_id = Auth::id();
-        return view('admin.questionbank.test.index', compact('user_id'));
+          // default = ACT
+       $examType = strtolower($request->query('exam_type')) === 'sat'
+        ? 'SAT'
+        : 'ACT';
+        // dd($examType);
+        
+        return view('admin.questionbank.test.index', compact('user_id', 'examType'));
     }
 
     public function store(Request $request)
@@ -44,10 +50,17 @@ class TestController extends Controller
         }
         
         $test_mode = is_array($request->test_mode) ? $request->test_mode[0] : $request->test_mode;
+      // ✅ exam_type ko properly handle karo
+    $examType = strtoupper($request->input('exam_type', 'ACT'));
+    
+    // ✅ Debug ke liye log karo
+    \Log::info('Creating test with exam_type: ' . $examType);
+    \Log::info('Request data: ', $request->all());
         $test = Test::create([
             'user_id' => Auth::id(),
             'subject_type' => $request->subject_type,
             'test_mode' => $test_mode,
+            'exam_type' => $examType,
             'question_mode' => $request->question_mode,
             'question_type' => json_encode($request->types),
             'practice_type' => $request->practice_type,
@@ -91,10 +104,14 @@ class TestController extends Controller
         $wp_test             = $request->get('wp_test');
     
         
-        $apiUrl = "https://lucidprep.org/wp-json/custom/v1/questions";
+        $apiUrl = "https://staging.lucidprep.org/wp-json/custom/v1/questions";
         $apiKey = "TqoRzM7pqadqVDr8mZxarSiK5m1weTsbl3NapWxzNN";
     
-        $response = Http::withHeaders(['X-API-KEY' => $apiKey])->get($apiUrl);
+        $examType = request()->query('exam_type') === 'sat' ? 'SAT' : 'ACT';
+
+$response = Http::withHeaders(['X-API-KEY' => $apiKey])->get($apiUrl, [
+    'exam_type' => $examType
+]);
         if (!$response->successful()) {
             return response()->json([
                 'success' => false,
@@ -188,33 +205,50 @@ class TestController extends Controller
             ]);
         } catch (\Exception $e) {
             \Log::error('Redirect failed: '.$e->getMessage());
-            return redirect('https://lucidprep.org/all-subjects/');
+            return redirect('https://staging.lucidprep.org/all-subjects/');
         }
     }
 
 
-    public function fetchTabsCounts($subject)
-    {
-        $apiUrl = "https://lucidprep.org/wp-json/custom/v1/courses-list";
-        $apiKey = "TqoRzM7pqadqVDr8mZxarSiK5m1weTsbl3NapWxzNN";
+   public function fetchTabsCounts(Request $request, $subject)
+{
+    $apiUrl = "https://staging.lucidprep.org/wp-json/custom/v1/courses-list";
+    $apiKey = "TqoRzM7pqadqVDr8mZxarSiK5m1weTsbl3NapWxzNN";
 
-        $response = Http::withHeaders([
-            'X-API-KEY' => $apiKey,
-        ])->get($apiUrl);
+    // 🔑 exam_type resolve
+    $examType = strtolower($request->query('exam_type')) === 'sat'
+        ? 'SAT'
+        : 'ACT';
 
-        if ($response->successful()) {
-            return response()->json($response->json());
-        }
+    // 👇 query params conditionally bhejo
+    $queryParams = [];
 
-        return response()->json(['error' => 'Failed to fetch data'], 500);
+    // ❗ sirf tab bhejo jab SAT ho
+    if ($examType === 'SAT') {
+        $queryParams['exam_type'] = 'SAT';
     }
+
+    // ACT ke liye param na bhejna (WP me ACT + NULL)
+    $response = Http::withHeaders([
+        'X-API-KEY' => $apiKey,
+    ])->get($apiUrl, $queryParams);
+
+    if ($response->successful()) {
+        return response()->json($response->json());
+    }
+
+    return response()->json([], 200);
+}
     
     public function createTestManual(Request $request)
     {
          $subjectType = ucfirst($request->subject_type); 
-        $numOfPassages = $request->num_of_passages;
+         $numOfPassages = $request->num_of_passages;
 
-        $apiUrl = "https://lucidprep.org/wp-json/custom/v1/questions";
+          // ✅ exam_type fetch karo
+    $examType = strtoupper($request->input('exam_type', 'ACT'));
+
+        $apiUrl = "https://staging.lucidprep.org/wp-json/custom/v1/questions";
         $apiKey = "TqoRzM7pqadqVDr8mZxarSiK5m1weTsbl3NapWxzNN";
 
         $response = Http::withHeaders([
@@ -243,6 +277,7 @@ class TestController extends Controller
         $test = Test::create([
             'user_id' => Auth::id(),
             'subject_type' => $subjectType,
+            'exam_type' => $examType,
             'test_mode' => 'tutor',
             'question_mode' => 'standard',
             'question_type' => json_encode(["unused"]),
@@ -300,21 +335,25 @@ class TestController extends Controller
     public function fetchQuestionCounts($subject)
     {
        
-        $apiUrl = "https://lucidprep.org/wp-json/custom/v1/questions";
+        $apiUrl = "https://staging.lucidprep.org/wp-json/custom/v1/questions";
         $apiKey = "TqoRzM7pqadqVDr8mZxarSiK5m1weTsbl3NapWxzNN";
+
+        $examType = request()->query('exam_type') === 'sat' ? 'SAT' : 'ACT';
+
+      
 
         $response = Http::withHeaders([
             'X-API-KEY' => $apiKey,
-        ])->get($apiUrl,['select_courses'   => $subject]);
+        ])->get($apiUrl, [
+            'select_courses' => $subject,
+            'exam_type' => $examType,
+        ]);
 
         if ($response->successful()) {
             $questions = collect($response->json());
 
-            // **Filter questions where select_courses contains the given subject**
-            $filteredQuestions = $questions->filter(function ($question) use ($subject) {
-                return in_array($subject, $question['select_courses']);
-            });
-            
+         
+            $filteredQuestions = $questions;
             
             if ($subject === 'English') {
             $passageQuestions = $filteredQuestions->filter(function ($question) {
@@ -486,387 +525,6 @@ class TestController extends Controller
             return response()->json(['error' => 'Failed to fetch questions from API'], $response->status());
         }
     }
-    
-    // public function fetchQuestionCounts($subject)
-    // {
-    //     $apiUrl = "https://iamdeveloper.in/Kevin_harris_project_dev/wp-json/custom/v1/questions";
-    //     $apiKey = "TqoRzM7pqadqVDr8mZxarSiK5m1weTsbl3NapWxzNN";
-    
-    //     $response = Http::withHeaders([
-    //         'X-API-KEY' => $apiKey,
-    //     ])->get($apiUrl);
-    
-    //     if ($response->successful()) {
-    //         $questions = collect($response->json());
-    
-    //         // ✅ Fetch previously used questions for uniqueness
-    //         $usedQuestionIds = TestResult::where('user_id', auth()->id())
-    //             ->pluck('question_id')
-    //             ->toArray();
-    
-    //         // ✅ Filter questions where select_courses contains the given subject
-    //         $filteredQuestions = $questions->filter(function ($question) use ($subject) {
-    //             return in_array($subject, $question['select_courses']);
-    //         });
-    
-    //         // ✅ Remove already used questions (for uniqueness)
-    //         $filteredQuestions = $filteredQuestions->filter(function ($question) use ($usedQuestionIds) {
-    //             return !in_array($question['id'], $usedQuestionIds);
-    //         });
-    
-    //         // ✅ Get all unique 'select_subject' for this course (even if 0 questions after unique filtering)
-    //         $allSubjectsForThisCourse = $questions->filter(function ($question) use ($subject) {
-    //             return in_array($subject, $question['select_courses']);
-    //         })->flatMap(function ($question) {
-    //             return $question['select_subject'];
-    //         })->unique()->values();
-    
-    //         // ✅ Initialize all possible subjects with default zero values
-    //         $subjectPassageMap = [];
-    //         foreach ($allSubjectsForThisCourse as $subjectName) {
-    //             $subjectPassageMap[$subjectName] = [
-    //                 'total' => 0,
-    //                 'has_passages' => false,
-    //                 'passage_ids' => collect()
-    //             ];
-    //         }
-    
-    //         // ✅ Now update with filteredQuestions (unique ones only)
-    //         foreach ($filteredQuestions as $question) {
-    //             $passageIds = collect($question['passages'] ?? [])
-    //                 ->filter(function ($passage) {
-    //                     return isset($passage['id']) && !empty(trim($passage['content']));
-    //                 })
-    //                 ->pluck('id')
-    //                 ->unique();
-    
-    //             foreach ($question['select_subject'] as $subjectName) {
-    //                 if (isset($subjectPassageMap[$subjectName])) {
-    //                     $subjectPassageMap[$subjectName]['total']++;
-    //                     if ($passageIds->isNotEmpty()) {
-    //                         $subjectPassageMap[$subjectName]['has_passages'] = true;
-    //                         $subjectPassageMap[$subjectName]['passage_ids'] = $subjectPassageMap[$subjectName]['passage_ids']->merge($passageIds);
-    //                     }
-    //                 }
-    //             }
-    //         }
-    
-    //         // ✅ Final formatted subjectCounts
-    //         $subjectCounts = collect($subjectPassageMap)->map(function ($data, $subjectName) {
-    //             return [
-    //                 'subject_name' => $subjectName,
-    //                 'total' => $data['total'],
-    //                 'has_passages' => $data['has_passages'],
-    //                 'passage_count' => $data['passage_ids']->unique()->count()
-    //             ];
-    //         })->values();
-    
-    //         // ✅ Other calculations remain as they are (difficulty, type, etc.)
-    
-    //         // Group by difficulty level
-    //         $questionCounts = $filteredQuestions->groupBy('difficulty_level')
-    //             ->map(function ($group, $difficulty) {
-    //                 $uniquePassages = $group->flatMap(function ($question) {
-    //                     return collect($question['passages'] ?? [])
-    //                         ->filter(function ($passage) {
-    //                             return isset($passage['id']) && !empty(trim($passage['content']));
-    //                         })
-    //                         ->pluck('id');
-    //                 })->unique();
-    
-    //                 $passageQuestionCount = $group->filter(function ($question) {
-    //                     return !empty($question['passages']);
-    //                 })->count();
-    
-    //                 return [
-    //                     'difficulty' => $difficulty,
-    //                     'total' => $group->count(),
-    //                     'passage_count' => $uniquePassages->count(),
-    //                     'passage_question_count' => $passageQuestionCount
-    //                 ];
-    //             })->values();
-    
-    //         // Group by question type
-    //         $typeCounts = $filteredQuestions->flatMap(function ($question) {
-    //             return $question['select_courses'];
-    //         })->countBy()->map(function ($count, $type) {
-    //             return [
-    //                 'question_type' => $type,
-    //                 'total' => $count
-    //             ];
-    //         })->values();
-    
-    //         // Select Topics
-    //         $topicMap = [];
-    //         foreach ($filteredQuestions as $question) {
-    //             $passageIds = collect($question['passages'] ?? [])
-    //                 ->filter(function ($passage) {
-    //                     return isset($passage['id']) && !empty(trim($passage['content']));
-    //                 })
-    //                 ->pluck('id')
-    //                 ->unique();
-    
-    //             foreach ($question['select_topic'] as $topicName) {
-    //                 if (!isset($topicMap[$topicName])) {
-    //                     $topicMap[$topicName] = [
-    //                         'total' => 0,
-    //                         'passage_ids' => collect()
-    //                     ];
-    //                 }
-    
-    //                 $topicMap[$topicName]['total']++;
-    //                 if ($passageIds->isNotEmpty()) {
-    //                     $topicMap[$topicName]['passage_ids'] = $topicMap[$topicName]['passage_ids']->merge($passageIds);
-    //                 }
-    //             }
-    //         }
-    
-    //         $select_topics = collect($topicMap)->map(function ($data, $topicName) {
-    //             return [
-    //                 'topic_name' => $topicName,
-    //                 'total' => $data['total'],
-    //                 'passage_count' => $data['passage_ids']->unique()->count()
-    //             ];
-    //         })->values();
-    
-    //         $groupedTopics = $select_topics->groupBy(function ($topic) use ($filteredQuestions) {
-    //             $matchingQuestion = $filteredQuestions->firstWhere(function ($question) use ($topic) {
-    //                 return in_array($topic['topic_name'], $question['select_topic']);
-    //             });
-    //             return $matchingQuestion ? $matchingQuestion['select_subject'][0] : null;
-    //         });
-    
-    //         $uniquePassageIds = $filteredQuestions->flatMap(function ($question) {
-    //             return collect($question['passages'])
-    //                 ->filter(function ($passage) {
-    //                     return isset($passage['id']) && !empty(trim($passage['content']));
-    //                 })
-    //                 ->pluck('id');
-    //         })->unique();
-    
-    //         $passageCount = $uniquePassageIds->count();
-    
-    //         // Total Questions and Passages
-    //         $totalQuestions = $filteredQuestions->count();
-    //         $totalPassages = $passageCount;
-    
-    //         return response()->json([
-    //             'difficulties' => $questionCounts,
-    //             'types' => $typeCounts,
-    //             'subjectCounts' => $subjectCounts,
-    //             'select_topics' => $select_topics,
-    //             'totalQuestions' => $totalQuestions,
-    //             'totalPassages' => $totalPassages,
-    //             'groupedTopics' => $groupedTopics,
-    //             'passageCount' => $passageCount
-    //         ]);
-    //     } else {
-    //         return response()->json(['error' => 'Failed to fetch questions from API'], $response->status());
-    //     }
-    // }
-    
-    // public function fetchQuestionCounts($subject)
-    // {
-    //     $apiUrl = "https://iamdeveloper.in/Kevin_harris_project_dev/wp-json/custom/v1/questions";
-    //     $apiKey = "TqoRzM7pqadqVDr8mZxarSiK5m1weTsbl3NapWxzNN";
-    
-    //     $response = Http::withHeaders([
-    //         'X-API-KEY' => $apiKey,
-    //     ])->get($apiUrl);
-    
-    //     if ($response->successful()) {
-    //         $questions = collect($response->json());
-    
-    //         // ✅ Fetch previously used questions for uniqueness
-    //         $usedQuestionIds = TestResult::where('user_id', auth()->id())
-    //             ->pluck('question_id')
-    //             ->toArray();
-    
-    //         // ✅ Filter questions where select_courses contains the given subject
-    //         $filteredQuestions = $questions->filter(function ($question) use ($subject) {
-    //             return in_array($subject, $question['select_courses']);
-    //         });
-    
-    //         // ✅ Remove already used questions (for uniqueness)
-    //         $filteredQuestions = $filteredQuestions->filter(function ($question) use ($usedQuestionIds) {
-    //             return !in_array($question['id'], $usedQuestionIds);
-    //         });
-    
-    //         // ✅ Get all unique 'select_subject' for this course (even if 0 questions after unique filtering)
-    //         $allSubjectsForThisCourse = $questions->filter(function ($question) use ($subject) {
-    //             return in_array($subject, $question['select_courses']);
-    //         })->flatMap(function ($question) {
-    //             return $question['select_subject'];
-    //         })->unique()->values();
-    
-    //         // ✅ Initialize all possible subjects with default zero values
-    //         $subjectPassageMap = [];
-    //         foreach ($allSubjectsForThisCourse as $subjectName) {
-    //             $subjectPassageMap[$subjectName] = [
-    //                 'total' => 0,
-    //                 'has_passages' => false,
-    //                 'passage_ids' => collect()
-    //             ];
-    //         }
-    
-    //         // ✅ Now update with filteredQuestions (unique ones only)
-    //         foreach ($filteredQuestions as $question) {
-    //             $passageIds = collect($question['passages'] ?? [])
-    //                 ->filter(function ($passage) {
-    //                     return isset($passage['id']) && !empty(trim($passage['content']));
-    //                 })
-    //                 ->pluck('id')
-    //                 ->unique();
-    
-    //             foreach ($question['select_subject'] as $subjectName) {
-    //                 if (isset($subjectPassageMap[$subjectName])) {
-    //                     $subjectPassageMap[$subjectName]['total']++;
-    //                     if ($passageIds->isNotEmpty()) {
-    //                         $subjectPassageMap[$subjectName]['has_passages'] = true;
-    //                         $subjectPassageMap[$subjectName]['passage_ids'] = $subjectPassageMap[$subjectName]['passage_ids']->merge($passageIds);
-    //                     }
-    //                 }
-    //             }
-    //         }
-    
-    //         // ✅ Final formatted subjectCounts
-    //         $subjectCounts = collect($subjectPassageMap)->map(function ($data, $subjectName) {
-    //             return [
-    //                 'subject_name' => $subjectName,
-    //                 'total' => $data['total'],
-    //                 'has_passages' => $data['has_passages'],
-    //                 'passage_count' => $data['passage_ids']->unique()->count()
-    //             ];
-    //         })->values();
-    
-    //         // ✅ TotalQuestions and TotalPassages special handling for English
-    //         if ($subject === 'English') {
-    //             $passageQuestions = $filteredQuestions->filter(function ($question) {
-    //                 return !empty($question['passages']);
-    //             });
-    
-    //             $totalQuestions = $passageQuestions->count();
-    
-    //             $totalPassages = $passageQuestions->flatMap(function ($question) {
-    //                 return collect($question['passages'] ?? [])
-    //                     ->filter(function ($passage) {
-    //                         return isset($passage['id']) && !empty(trim($passage['content']));
-    //                     })
-    //                     ->pluck('id');
-    //             })->unique()->count();
-    //         } else {
-    //             // Other subjects
-    //             $totalQuestions = $filteredQuestions->count();
-    
-    //             $totalPassages = $filteredQuestions->flatMap(function ($question) {
-    //                 return collect($question['passages'] ?? [])
-    //                     ->filter(function ($passage) {
-    //                         return isset($passage['id']) && !empty(trim($passage['content']));
-    //                     })
-    //                     ->pluck('id');
-    //             })->unique()->count();
-    //         }
-    
-    //         // ✅ Group by difficulty level
-    //         $questionCounts = $filteredQuestions->groupBy('difficulty_level')
-    //             ->map(function ($group, $difficulty) {
-    //                 $uniquePassages = $group->flatMap(function ($question) {
-    //                     return collect($question['passages'] ?? [])
-    //                         ->filter(function ($passage) {
-    //                             return isset($passage['id']) && !empty(trim($passage['content']));
-    //                         })
-    //                         ->pluck('id');
-    //                 })->unique();
-    
-    //                 $passageQuestionCount = $group->filter(function ($question) {
-    //                     return !empty($question['passages']);
-    //                 })->count();
-    
-    //                 return [
-    //                     'difficulty' => $difficulty,
-    //                     'total' => $group->count(),
-    //                     'passage_count' => $uniquePassages->count(),
-    //                     'passage_question_count' => $passageQuestionCount
-    //                 ];
-    //             })->values();
-    
-    //         // ✅ Group by question type
-    //         $typeCounts = $filteredQuestions->flatMap(function ($question) {
-    //             return $question['select_courses'];
-    //         })->countBy()->map(function ($count, $type) {
-    //             return [
-    //                 'question_type' => $type,
-    //                 'total' => $count
-    //             ];
-    //         })->values();
-    
-    //         // ✅ Select Topics
-    //         $topicMap = [];
-    //         foreach ($filteredQuestions as $question) {
-    //             $passageIds = collect($question['passages'] ?? [])
-    //                 ->filter(function ($passage) {
-    //                     return isset($passage['id']) && !empty(trim($passage['content']));
-    //                 })
-    //                 ->pluck('id')
-    //                 ->unique();
-    
-    //             foreach ($question['select_topic'] as $topicName) {
-    //                 if (!isset($topicMap[$topicName])) {
-    //                     $topicMap[$topicName] = [
-    //                         'total' => 0,
-    //                         'passage_ids' => collect()
-    //                     ];
-    //                 }
-    
-    //                 $topicMap[$topicName]['total']++;
-    //                 if ($passageIds->isNotEmpty()) {
-    //                     $topicMap[$topicName]['passage_ids'] = $topicMap[$topicName]['passage_ids']->merge($passageIds);
-    //                 }
-    //             }
-    //         }
-    
-    //         $select_topics = collect($topicMap)->map(function ($data, $topicName) {
-    //             return [
-    //                 'topic_name' => $topicName,
-    //                 'total' => $data['total'],
-    //                 'passage_count' => $data['passage_ids']->unique()->count()
-    //             ];
-    //         })->values();
-    
-    //         $groupedTopics = $select_topics->groupBy(function ($topic) use ($filteredQuestions) {
-    //             $matchingQuestion = $filteredQuestions->firstWhere(function ($question) use ($topic) {
-    //                 return in_array($topic['topic_name'], $question['select_topic']);
-    //             });
-    //             return $matchingQuestion ? $matchingQuestion['select_subject'][0] : null;
-    //         });
-    
-    //         $uniquePassageIds = $filteredQuestions->flatMap(function ($question) {
-    //             return collect($question['passages'] ?? [])
-    //                 ->filter(function ($passage) {
-    //                     return isset($passage['id']) && !empty(trim($passage['content']));
-    //                 })
-    //                 ->pluck('id');
-    //         })->unique();
-    
-    //         $passageCount = $uniquePassageIds->count();
-
-    //         return response()->json([
-    //             'difficulties' => $questionCounts,
-    //             'types' => $typeCounts,
-    //             'subjectCounts' => $subjectCounts,
-    //             'select_topics' => $select_topics,
-    //             'totalQuestions' => $totalQuestions,
-    //             'totalPassages' => $totalPassages,
-    //             'groupedTopics' => $groupedTopics,
-    //             'passageCount' => $passageCount
-    //         ]);
-    //     } else {
-    //         return response()->json(['error' => 'Failed to fetch questions from API'], $response->status());
-    //     }
-    // }
-
-
-  
     public function suspendDestroy($id)
     {
         $test = Test::findOrFail($id);
@@ -892,7 +550,7 @@ class TestController extends Controller
             ->pluck('question_id')
             ->toArray();
 
-        $apiUrl = "https://lucidprep.org/wp-json/custom/v1/questions";
+        $apiUrl = "https://staging.lucidprep.org/wp-json/custom/v1/questions";
         $apiKey = "TqoRzM7pqadqVDr8mZxarSiK5m1weTsbl3NapWxzNN";
         
          /* -----------------------------
@@ -902,6 +560,8 @@ class TestController extends Controller
         $selectedTopics       = json_decode($test->selected_topics, true) ?? [];
         $selectedDifficulties = array_map('strtolower', json_decode($test->difficulty_levels, true) ?? []);
         $subjectType          = $test->subject_type;
+         // ✅ YE KARO - DB se fetch karo:
+    $examType = strtoupper($test->exam_type ?? 'ACT');
         
         $response = Http::withHeaders([
             'X-API-KEY' => $apiKey,
@@ -909,7 +569,8 @@ class TestController extends Controller
                     'select_courses'   => $subjectType,
                     'subject'          => $selectedSubjects,
                     'topics'           => $selectedTopics,
-                    'difficulty_level' => $selectedDifficulties
+                    'difficulty_level' => $selectedDifficulties,    
+                    'exam_type'        => $examType,
                 ]);
         
         if (!$response->successful()) {
@@ -1070,161 +731,7 @@ class TestController extends Controller
 
     }
     
-    // public function launched(Request $request, $user_id, $test_id)
-    // {
-    //     $test = Test::find($test_id);
-    //     if (!$test) {
-    //         return response()->json(['error' => 'Test not found'], 404);
-    //     }
     
-    //     $userId = Auth::id();
-    //     $decks = Deck::where('user_id', $userId)->with('cards')->orderBy('id', 'desc')->get();
-    //     $notes = Note::where('user_id', Auth::id())->get();
-    
-    //     $questionLimit = $test->num_of_passages;
-    //     $maxPassages = $questionLimit ? $questionLimit : 0;
-    
-    //     $apiUrl = "https://iamdeveloper.in/Kevin_harris_project_dev/wp-json/custom/v1/questions";
-    //     $apiKey = "TqoRzM7pqadqVDr8mZxarSiK5m1weTsbl3NapWxzNN";
-    
-    //     $response = Http::withHeaders([
-    //         'X-API-KEY' => $apiKey,
-    //     ])->get($apiUrl);
-    
-    //     if ($response->successful()) {
-    //         $allQuestions = $response->json();
-    
-    //         $selectedSubjects = json_decode($test->selected_subjects, true) ?? [];
-    //         $selectedTopics = json_decode($test->selected_topics, true) ?? [];
-    //         $selectedDifficulties = array_map('strtolower', json_decode($test->difficulty_levels, true) ?? []);
-    
-    //         // ✅ Pehle check karo kya TestResult mein questions stored hain
-    //         $existingQuestions = TestResult::where('user_id', $user_id)
-    //             ->where('test_id', $test_id)
-    //             ->pluck('question_id')
-    //             ->toArray();
-    
-    //         // ✅ User ke answers bhi nikaalo
-    //         $userAnswers = TestResult::where('user_id', $user_id)
-    //             ->where('test_id', $test_id)
-    //             ->pluck('user_answer', 'question_id')
-    //             ->toArray();
-    
-    //         if (!empty($existingQuestions)) {
-    //             // ✅ Same questions wapas load karo
-    //             $finalQuestions = array_filter($allQuestions, function ($question) use ($existingQuestions) {
-    //                 return in_array($question['id'], $existingQuestions);
-    //             });
-    //             $finalQuestions = array_values($finalQuestions);
-    
-    //         } else {
-    //             // ✅ Naye unique questions fetch karna h
-    //             $usedQuestionIds = TestResult::where('user_id', $user_id)->pluck('question_id')->toArray();
-    
-    //             $filteredQuestions = array_filter($allQuestions, function ($question) use ($test, $selectedSubjects, $selectedTopics, $selectedDifficulties, $usedQuestionIds) {
-    //                 return isset($question['select_courses'], $question['select_subject'], $question['difficulty_level']) &&
-    //                     is_array($question['select_courses']) &&
-    //                     is_array($question['select_subject']) &&
-    //                     in_array($test->subject_type, $question['select_courses']) &&
-    //                     in_array(strtolower($question['difficulty_level']), $selectedDifficulties) &&
-    //                     !in_array($question['id'], $usedQuestionIds) &&
-    //                     (
-    //                         (!empty($selectedTopics) && isset($question['select_topic']) && is_array($question['select_topic']) && !empty(array_intersect($selectedTopics, $question['select_topic']))) ||
-    //                         (empty($selectedTopics) && !empty(array_intersect($selectedSubjects, $question['select_subject'])))
-    //                     );
-    //             });
-    
-    //             $filteredQuestions = array_values($filteredQuestions);
-    
-    //             if (empty($filteredQuestions)) {
-    //                 return redirect('https://iamdeveloper.in/Kevin_harris_project_dev/all-subjects?all_attempt_test=1'); 
-    //             }
-    
-    //             // ✅ Passage/grouping logic
-    //             $groupedQuestionsByPassage = [];
-    //             $selectedPassages = [];
-    //             $noPassageQuestions = [];
-    
-    //             foreach ($filteredQuestions as $question) {
-    //                 if (!empty($question['passages']) && is_array($question['passages'])) {
-    //                     $passageId = $question['passages'][0]['id'];
-    //                     $groupedQuestionsByPassage[$passageId][] = $question;
-    //                     $selectedPassages[$passageId] = $question['passages'][0];
-    //                 } else {
-    //                     $noPassageQuestions[] = $question;
-    //                 }
-    //             }
-    
-    //             foreach ($groupedQuestionsByPassage as &$questions) {
-    //                 usort($questions, fn($a, $b) => $a['id'] <=> $b['id']);
-    //             }
-    //             unset($questions);
-    
-    //             $maxPassages = $test->num_of_passages ?? 0;
-    //             $selectedGroupedQuestions = array_slice($groupedQuestionsByPassage, 0, $maxPassages, true);
-    
-    //             $finalQuestions = [];
-    //             foreach ($selectedGroupedQuestions as $passageId => $questions) {
-    //                 foreach ($questions as $q) {
-    //                     $finalQuestions[] = $q;
-    //                 }
-    //             }
-    
-    //             $remainingSlots = $questionLimit - count($finalQuestions);
-    //             if ($remainingSlots > 0) {
-    //                 $finalQuestions = array_merge($finalQuestions, array_slice($noPassageQuestions, 0, $remainingSlots));
-    //             }
-    
-    //             // ✅ Save questions to TestResult
-    //             foreach ($finalQuestions as $question) {
-    //                 TestResult::create([
-    //                     'user_id' => $user_id,
-    //                     'test_id' => $test_id,
-    //                     'question_id' => $question['id']
-    //                 ]);
-    //             }
-    //         }
-    
-    //         if (empty($finalQuestions)) {
-    //             $test->update(['status' => 'NotStarted']);
-    //             return redirect()->back()->with('error', 'No questions found for the selected criteria.');
-    //         }
-    
-    //         $subject = strtolower($test->subject_type);
-    //         $questionCount = count($finalQuestions);
-    
-    //         $totalTimeInSeconds = null;
-    //         if ($subject === 'english') {
-    //             $totalTimeInSeconds = $questionCount * 36;
-    //         } elseif ($subject === 'math') {
-    //             $totalTimeInSeconds = $questionCount * 60;
-    //         } elseif ($subject === 'science') {
-    //             $totalTimeInSeconds = $questionCount * 50;
-    //         } else {
-    //             $totalTimeInSeconds = $questionCount * 52.5;
-    //         }
-        
-    //         return view('admin.questionbank.test.launchtest', [
-    //             'questions' => $finalQuestions,
-    //             'groupedQuestions' => $selectedGroupedQuestions ?? [],
-    //             'selectedPassages' => $selectedPassages ?? [],
-    //             'test' => $test,
-    //             'decks' => $decks,
-    //             'notes' => $notes,
-    //             'maxPassages' => $maxPassages,
-    //             'totalTimeInSeconds' => $totalTimeInSeconds,
-    //             'subject' => $subject,
-    //             'userAnswers' => $userAnswers,
-    //         ]);
-    
-    //     } else {
-    //         return response()->json([
-    //             'error' => 'Unable to fetch data',
-    //             'status' => $response->status(),
-    //             'body' => $response->body(),
-    //         ], $response->status());
-    //     }
-    // }
    
     public function markQuestionSeen(Request $request)
     {
@@ -1344,7 +851,7 @@ class TestController extends Controller
     public function submitAnswer(Request $request, $test_id, $question_id)
     {
         // Fetch questions from API
-        $apiUrl = "https://lucidprep.org/wp-json/custom/v1/questions/$question_id";
+        $apiUrl = "https://staging.lucidprep.org/wp-json/custom/v1/questions/$question_id";
         $apiKey = "TqoRzM7pqadqVDr8mZxarSiK5m1weTsbl3NapWxzNN";
 
         $response = Http::withHeaders([
@@ -1502,7 +1009,7 @@ class TestController extends Controller
     
      public function resultIndex($user_id, $test_id)
     {
-        $apiUrl = "https://lucidprep.org/wp-json/custom/v1/questions";
+        $apiUrl = "https://staging.lucidprep.org/wp-json/custom/v1/questions";
         $apiKey = "TqoRzM7pqadqVDr8mZxarSiK5m1weTsbl3NapWxzNN";
     
         $questionsResponse = Http::withHeaders([
@@ -1590,7 +1097,7 @@ class TestController extends Controller
         $numQuestions = count($answers);
         $avgTime = ($numQuestions > 0 && $totalTimeSpent > 0) ? round($totalTimeSpent / $numQuestions) : 0;
         // Fetch questions from API to get correct answers
-        $apiUrl = "https://lucidprep.org/wp-json/custom/v1/questions";
+        $apiUrl = "https://staging.lucidprep.org/wp-json/custom/v1/questions";
         $apiKey = "TqoRzM7pqadqVDr8mZxarSiK5m1weTsbl3NapWxzNN";
 
         $response = Http::withHeaders([

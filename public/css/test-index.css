@@ -1,0 +1,82 @@
+.nav-tabs li {
+    font-size: 15px;
+    padding: 0 10px;
+}
+
+input#tutorSwitch {
+    width: 3rem;
+}
+
+input#timedSwitch {
+    width: 3rem;
+}
+
+.btn-group-toggle .btn {
+    border-radius: 20px;
+    padding: 8px 20px;
+    font-size: 16px;
+    transition: 0.3s;
+}
+
+.btn-check:checked+.btn {
+    background-color: #fff;
+    border-color: #ddd;
+    color: black;
+    font-weight: bold;
+}
+
+.btn-group {
+    background-color: #e9ecef;
+    border-radius: 25px;
+    padding: 3px;
+}
+
+
+/* Custom Checkbox Styling */
+
+.form-check-input {
+    width: 1.2rem;
+    height: 1.2rem;
+}
+
+
+/* Blue Badge Styling */
+
+.badge-info {
+    background-color: #e8f0ff;
+    color: #1a73e8;
+    font-weight: 600;
+}
+
+
+/* Disabled Input */
+
+.disabled-input {
+    background: #f8f9fa;
+    border: 1px solid #ddd;
+    text-align: center;
+    width: 50px;
+}
+
+.icon-size {
+    font-size: 15px;
+}
+
+.search_bar .dropdown-menu form {
+    margin-bottom: 0;
+}
+
+.card {
+    height: auto;
+}
+
+#examTabs .btn {
+    border-radius: 20px;
+    padding: 6px 20px;
+    font-weight: 600;
+}
+
+#examTabs .btn.active {
+    background-color: #0d6efd;
+    color: #fff;
+}

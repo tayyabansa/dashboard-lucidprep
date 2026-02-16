@@ -43,10 +43,10 @@
         body {
             font-family: Arial, sans-serif;
         }
-        
+
         .btn-loader {
-    margin-left: 6px;
-}
+            margin-left: 6px;
+        }
 
         /* Popup Styling */
         .popup {
@@ -941,11 +941,11 @@
             {{-- ✅ English with passages - Show all questions at once --}}
             <div class="question-item" data-index="0" data-hint="English Test" data-question-id="english-bulk"
                 style="display: none;">
-                    <div class="col-md-12 question-area english resizable col1">
-                         <div style="text-align: center;">
-            <strong>ENGLISH PRACTICE TEST</strong><br><br>
-            <strong>45 Minutes – 75 Questions</strong><br><br>
-            </div>
+                <div class="col-md-12 question-area english resizable col1">
+                    <div style="text-align: center;">
+                        <strong>ENGLISH PRACTICE TEST</strong><br><br>
+                        <strong>45 Minutes – 75 Questions</strong><br><br>
+                    </div>
                     <strong>DIRECTIONS:</strong> In the passage that follows, certain words and phrases are underlined
                     and numbered. In the right-hand column, you will find alternatives for the underlined part. In most
                     cases, you are to choose the one that best expresses the idea, makes the statement appropriate for
@@ -957,8 +957,8 @@
                 </div>
                 <hr>
                 <div class="row">
-              
-                    
+
+
                     <div class="col-md-6 question-area english resizable col1">
                         {{-- Show first passage content --}}
                         @if (!empty($questions[0]['passages']))
@@ -1034,10 +1034,11 @@
                                     @endforeach
                                 </div>
                             @endforeach
-                            
+
                             {{-- Add hidden time_spent fields for each question --}}
                             @foreach ($questions as $question)
-                                <input type="hidden" name="time_spent[{{ $question['id'] }}]" id="time_spent_{{ $question['id'] }}" value="0">
+                                <input type="hidden" name="time_spent[{{ $question['id'] }}]"
+                                    id="time_spent_{{ $question['id'] }}" value="0">
                             @endforeach
 
                             <div class="text-center mt-4 mb-5" style="margin-bottom: 80px !important;">
@@ -1095,17 +1096,17 @@
                                         <p><strong class="me-2">Exercise:</strong>{!! $question['exercise'] !!}</p>
                                     @endif
                                     <p class="mt-2"><strong>Q:</strong> {!! $question['title'] !!}</p>
-                                    
+
                                     @php
-    $content = $question['content'] ?? '';
-@endphp
+                                        $content = $question['content'] ?? '';
+                                    @endphp
 
                                     @if ($content && strip_tags($content) !== $content)
-    {!! $content !!}                                 
-@else
-    {{ $content }}                                 
-@endif
-                                    
+                                        {!! $content !!}
+                                    @else
+                                        {{ $content }}
+                                    @endif
+
                                     @if (!empty($options) && count($options) > 0)
                                         <ul class="options-list">
                                             @php
@@ -1145,10 +1146,12 @@
                                         action="{{ route('launch-test', ['test_id' => $test->id, 'question_id' => $question['id']]) }}"
                                         method="POST">
                                         @csrf
-                                        <button type="submit" class="btn btn-primary mt-3 submitBtn submitNext" id="saveNextBtn">
-                                         <span class="btn-text">Save & Next</span>
-                                         <span class="btn-loader d-none"><i class="fa fa-spinner fa-spin"></i></span>
-                                            </button>
+                                        <button type="submit" class="btn btn-primary mt-3 submitBtn submitNext"
+                                            id="saveNextBtn">
+                                            <span class="btn-text">Save & Next</span>
+                                            <span class="btn-loader d-none"><i
+                                                    class="fa fa-spinner fa-spin"></i></span>
+                                        </button>
                                     </form>
                                     <div id="feedbackAlert_{{ $index }}"
                                         class="alert d-none custom-alert mt-3"></div>
@@ -1169,59 +1172,62 @@
                                     <p><strong class="me-2">Exercise:</strong>{!! $question['exercise'] !!}</p>
                                 @endif
                                 <p><strong>Q:</strong> {!! $question['title'] !!}</p>
-                                
-@php
-    $content = $question['content'] ?? '';
-    $cleanOptions = array_values(
-        array_filter($options ?? [], fn($opt) => trim($opt) !== '')
-    );
-@endphp
 
-@if ($content && strip_tags($content) !== $content)
-    {!! $content !!}
-@else
-    {{ $content }}
-@endif
+                                @php
+                                    $content = $question['content'] ?? '';
+                                    $cleanOptions = array_values(
+                                        array_filter($options ?? [], fn($opt) => trim($opt) !== ''),
+                                    );
+                                @endphp
 
-@if (!empty($cleanOptions) && count($cleanOptions) > 0)
-    {{-- Multiple Choice Options --}}
-    <ul class="options-list">
-        @foreach ($cleanOptions as $key => $option)
-            <li>
-                <div class="form-check">
-                    <input class="form-check-input" type="radio"
-                        name="user_answer_{{ $index }}"
-                        value="{{ chr(65 + $key) }}"
-                        id="option_{{ $index }}_{{ $key }}"
-                        @checked($savedIndex !== null && $savedIndex == $key)>
+                                @if ($content && strip_tags($content) !== $content)
+                                    {!! $content !!}
+                                @else
+                                    {{ $content }}
+                                @endif
 
-                    <label class="form-check-label" for="option_{{ $index }}_{{ $key }}">
-                        <strong>{{ chr(65 + $key) }}.</strong>
-                        @if (\Illuminate\Support\Str::contains($option, '<img'))
-                            {!! $option !!}
-                        @else
-                            {{ trim($option) }}
-                        @endif
-                    </label>
-                </div>
-            </li>
-        @endforeach
-    </ul>
-@else
-    {{-- Subjective Answer (Textarea + Final Answer) --}}
-    <div class="form-group mt-3">
-        @if ($test->subject_type !== 'English')
-            <label for="user_answer_textarea_{{ $index }}">Your Solution:</label>
-            <textarea name="user_answer_textarea_{{ $index }}" id="user_answer_textarea_{{ $index }}"
-                class="form-control trumbowyg-editor" rows="4"></textarea>
-        @endif
+                                @if (!empty($cleanOptions) && count($cleanOptions) > 0)
+                                    {{-- Multiple Choice Options --}}
+                                    <ul class="options-list">
+                                        @foreach ($cleanOptions as $key => $option)
+                                            <li>
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="radio"
+                                                        name="user_answer_{{ $index }}"
+                                                        value="{{ chr(65 + $key) }}"
+                                                        id="option_{{ $index }}_{{ $key }}"
+                                                        @checked($savedIndex !== null && $savedIndex == $key)>
 
-        <label for="user_answer_input_{{ $index }}" class="mt-2">Your Final Answer:</label>
-        <input type="text" name="user_answer_input_{{ $index }}"
-            id="user_answer_input_{{ $index }}"
-            class="form-control short-answer-input">
-    </div>
-@endif
+                                                    <label class="form-check-label"
+                                                        for="option_{{ $index }}_{{ $key }}">
+                                                        <strong>{{ chr(65 + $key) }}.</strong>
+                                                        @if (\Illuminate\Support\Str::contains($option, '<img'))
+                                                            {!! $option !!}
+                                                        @else
+                                                            {{ trim($option) }}
+                                                        @endif
+                                                    </label>
+                                                </div>
+                                            </li>
+                                        @endforeach
+                                    </ul>
+                                @else
+                                    {{-- Subjective Answer (Textarea + Final Answer) --}}
+                                    <div class="form-group mt-3">
+                                        @if ($test->subject_type !== 'English')
+                                            <label for="user_answer_textarea_{{ $index }}">Your
+                                                Solution:</label>
+                                            <textarea name="user_answer_textarea_{{ $index }}" id="user_answer_textarea_{{ $index }}"
+                                                class="form-control trumbowyg-editor" rows="4"></textarea>
+                                        @endif
+
+                                        <label for="user_answer_input_{{ $index }}" class="mt-2">Your Final
+                                            Answer:</label>
+                                        <input type="text" name="user_answer_input_{{ $index }}"
+                                            id="user_answer_input_{{ $index }}"
+                                            class="form-control short-answer-input">
+                                    </div>
+                                @endif
                                 <form id="quizForm"
                                     action="{{ route('launch-test', ['test_id' => $test->id, 'question_id' => $question['id']]) }}"
                                     method="POST">
@@ -2273,46 +2279,46 @@
                             return;
                         }
                     }
-                    
-                        let csrfToken = document.querySelector('input[name="_token"]').value;
-    
-                        let startTime = localStorage.getItem(
-                            `questionStartTime_${testId}_${questionId}`);
-                        let elapsedTime = startTime ? Math.floor((Date.now() - startTime) / 1000) : 0;
-    
-                        fetch(quizForm.action, {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                    'X-CSRF-TOKEN': csrfToken
-                                },
-                                body: JSON.stringify({
-                                    user_answer: userAnswer,
-                                    elapsed_time: elapsedTime
-                                })
+
+                    let csrfToken = document.querySelector('input[name="_token"]').value;
+
+                    let startTime = localStorage.getItem(
+                        `questionStartTime_${testId}_${questionId}`);
+                    let elapsedTime = startTime ? Math.floor((Date.now() - startTime) / 1000) : 0;
+
+                    fetch(quizForm.action, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': csrfToken
+                            },
+                            body: JSON.stringify({
+                                user_answer: userAnswer,
+                                elapsed_time: elapsedTime
                             })
-                            .then(response => response.json())
-                            .then(data => {
-                                if (data.error) {
-                                    alert("Error: " + data.error);
-                                    return;
-                                }
-    
-                                // showAlert(questionIndex, data.isCorrect, data.correctAnswer, data.explanation, data.accuracy, data.timeSpent);
-    
-                                localStorage.setItem(`answered_${testId}_${questionId}`, JSON
-                                    .stringify({
-                                        userAnswer: userAnswer,
-                                        isCorrect: data.isCorrect,
-                                        correctAnswer: data.correctAnswer,
-                                        explanation: data.explanation,
-                                        accuracy: data.accuracy,
-                                        timeSpent: data.timeSpent
-                                    }));
-    
-                                disableOptions(questionItem);
-                            })
-                            .catch(error => console.error("Error:", error));
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.error) {
+                                alert("Error: " + data.error);
+                                return;
+                            }
+
+                            // showAlert(questionIndex, data.isCorrect, data.correctAnswer, data.explanation, data.accuracy, data.timeSpent);
+
+                            localStorage.setItem(`answered_${testId}_${questionId}`, JSON
+                                .stringify({
+                                    userAnswer: userAnswer,
+                                    isCorrect: data.isCorrect,
+                                    correctAnswer: data.correctAnswer,
+                                    explanation: data.explanation,
+                                    accuracy: data.accuracy,
+                                    timeSpent: data.timeSpent
+                                }));
+
+                            disableOptions(questionItem);
+                        })
+                        .catch(error => console.error("Error:", error));
                 });
             });
         });
@@ -2499,14 +2505,14 @@
                 $(".submitNext").on("click", function() {
                     if (index < totalQuestions - 1) {
                         const questionItems = document.querySelectorAll(
-                                                    '.question-item:not([style*="display: none"])'
-                                                );
+                            '.question-item:not([style*="display: none"])'
+                        );
                         questionItems.forEach((questionItem, indexnum) => {
 
                             const selectedAnswer = questionItem.querySelector(
                                 'input[name="user_answer_' + index + '"]:checked'
                             );
-                        
+
                             if (selectedAnswer) {
                                 index++;
                                 showQuestion(index);
@@ -2614,19 +2620,19 @@
             $(".submitNext").click(function() {
                 if (currentIndex < totalQuestions - 1) {
                     const questionItems = document.querySelectorAll(
-                                                    '.question-item:not([style*="display: none"])'
-                                                );
+                        '.question-item:not([style*="display: none"])'
+                    );
                     questionItems.forEach((questionItem, index) => {
 
-                    const selectedAnswer = questionItem.querySelector(
-                        'input[name="user_answer_' + currentIndex + '"]:checked'
-                    );
-                
-                    if (selectedAnswer) {
-                        currentIndex++;
-                        showQuestion(currentIndex);
-                    }
-                    
+                        const selectedAnswer = questionItem.querySelector(
+                            'input[name="user_answer_' + currentIndex + '"]:checked'
+                        );
+
+                        if (selectedAnswer) {
+                            currentIndex++;
+                            showQuestion(currentIndex);
+                        }
+
                     });
                 }
             });
@@ -2761,7 +2767,7 @@
 
             function updateQuestionStatuses() {
                 var userId = {{ auth()->id() }};
-                
+
                 var testId = "{{ $test->id }}";
 
                 var url =
@@ -2822,7 +2828,7 @@
 
             updateQuestionStatuses();
             // setInterval(updateQuestionStatuses, 3000);
-            
+
 
             // var resultTestRoute = @json(route('test.result', ['user_id' => '__USER_ID__', 'test_id' => '__TEST_ID__']));
             var resultTestRoute = @json(route('results.index', ['user_id' => '__USER_ID__', 'test_id' => '__TEST_ID__']));
@@ -2842,9 +2848,9 @@
             //     // Redirect to the result page
             //     window.location.href = redirectUrl;
             // });
-            
+
             // old code 
-            
+
             // $("#confirmEndExam").click(function() {
             //     let userId = $("#userId").val() || "{{ auth()->id() }}";
             //     let testId = $("#testId").val() || "{{ $test->id }}";
@@ -2863,7 +2869,7 @@
             //         .replace('__TEST_ID__', testId);
             //     window.location.href = redirectUrl;
             // });
-            
+
             $("#confirmEndExam").click(function() {
                 let userId = $("#userId").val() || "{{ auth()->id() }}";
                 let testId = $("#testId").val() || "{{ $test->id }}";
@@ -3023,11 +3029,11 @@
                 const button = document.getElementById(buttonId);
 
                 if (isPaused) {
-                window.speechSynthesis.resume();
+                    window.speechSynthesis.resume();
                     isPaused = false;
-                button.innerText = "⏹️";
-                return;
-            }
+                    button.innerText = "⏹️";
+                    return;
+                }
 
                 if (isReading && !isPaused) {
                     window.speechSynthesis.pause();
@@ -3036,31 +3042,31 @@
                     return;
                 }
 
-            if (window.speechSynthesis.speaking) {
-                window.speechSynthesis.cancel();
-            }
+                if (window.speechSynthesis.speaking) {
+                    window.speechSynthesis.cancel();
+                }
 
                 const textContent = getText();
-            if (!textContent || textContent === "No readable content found.") {
+                if (!textContent || textContent === "No readable content found.") {
                     alert("Nothing to read — check that #" + contentDivId + " exists and has text.");
-                return;
-            }
+                    return;
+                }
 
                 currentUtterance = new SpeechSynthesisUtterance(textContent);
                 currentUtterance.lang = 'en-US';
                 currentUtterance.rate = 1;
 
                 currentUtterance.onend = function() {
-                button.innerText = "🔊";
+                    button.innerText = "🔊";
                     isReading = false;
                     isPaused = false;
-            };
+                };
 
                 window.speechSynthesis.speak(currentUtterance);
-            button.innerText = "⏹️";
+                button.innerText = "⏹️";
                 isReading = true;
                 isPaused = false;
-        }
+            }
 
             return toggleRead;
         }
@@ -3084,13 +3090,13 @@
 
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.4/dist/katex.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.4/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body, {
-                                                        delimiters: [
-                                                            {left: '$$', right: '$$', display: true},
-                                                            {left: '$', right: '$', display: false},
-                                                            {left: '\\(', right: '\\)', display: false},
-                                                            {left: '\\[', right: '\\]', display: true}
-                                                        ]
-                                                    });"></script>
+                                                                delimiters: [
+                                                                    {left: '$$', right: '$$', display: true},
+                                                                    {left: '$', right: '$', display: false},
+                                                                    {left: '\\(', right: '\\)', display: false},
+                                                                    {left: '\\[', right: '\\]', display: true}
+                                                                ]
+                                                            });"></script>
 
     //
     <script>
@@ -3127,11 +3133,11 @@
                 let formData = new FormData(this);
                 let answers = {};
                 let timeSpent = {};
-                
+
                 // Get current elapsed time from timer
                 let elapsedTime = parseInt($('#elapsed_time').val()) || 0;
                 let totalQuestions = $(this).find('.question-block').length;
-                
+
                 // If elapsed time seems too low, calculate manually
                 if (elapsedTime < 60) { // Less than 1 minute
                     let testStartTime = localStorage.getItem('testStartTime_' + "{{ $test->id }}");
@@ -3139,14 +3145,14 @@
                         elapsedTime = Math.floor((Date.now() - parseInt(testStartTime)) / 1000);
                     }
                 }
-                
+
                 let avgTimePerQuestion = totalQuestions > 0 ? Math.round(elapsedTime / totalQuestions) : 0;
-                
+
                 // Debug: Log the values
                 console.log('Elapsed Time:', elapsedTime);
                 console.log('Total Questions:', totalQuestions);
                 console.log('Avg Time Per Question:', avgTimePerQuestion);
-                
+
                 // Collect all selected answers
                 $(this).find('input[type="radio"]:checked').each(function() {
                     let name = $(this).attr('name');
@@ -3154,14 +3160,14 @@
                     let questionId = name.match(/answers\[(\d+)\]/)[1];
                     answers[questionId] = value;
                 });
-                
+
                 // Set time_spent for each question (equal distribution)
                 $(this).find('input[type="hidden"][id^="time_spent_"]').each(function() {
                     let qid = $(this).attr('id').replace('time_spent_', '');
                     $(this).val(avgTimePerQuestion);
                     timeSpent[qid] = avgTimePerQuestion;
                 });
-                
+
                 // Check if all questions are answered
                 let answeredQuestions = Object.keys(answers).length;
                 if (answeredQuestions < totalQuestions) {
@@ -3173,7 +3179,7 @@
                     });
                     return;
                 }
-                
+
                 // Submit via AJAX
                 $.ajax({
                     url: $(this).attr('action'),
@@ -3187,7 +3193,8 @@
                     success: function(response) {
                         if (response.success) {
                             // Show endExamModal
-                            const endExamModal = new bootstrap.Modal(document.getElementById('endExamModal'));
+                            const endExamModal = new bootstrap.Modal(document.getElementById(
+                                'endExamModal'));
                             endExamModal.show();
                         } else {
                             Swal.fire({
@@ -3359,58 +3366,57 @@
                 window.speechSynthesis.cancel();
             });
         })();
-        
 
-let is_request_completed = 0;
 
-/* ---------- BUTTON UI HANDLER ---------- */
-function updateSubmitButton() {
-    if (is_request_completed > 0) {
-        $('.submitNext').prop('disabled', true);
-        $('.submitNext').addClass('disabled');
-        $('#saveNextBtn .btn-text').addClass('d-none');
-        $('#saveNextBtn .btn-loader').removeClass('d-none');
-    } else {
-        $('.submitNext').prop('disabled', false);
-        $('.submitNext').removeClass('disabled');
-        $('#saveNextBtn .btn-text').removeClass('d-none');
-        $('#saveNextBtn .btn-loader').addClass('d-none');
-    }
-}
+        let is_request_completed = 0;
 
-/* ---------- JQUERY AJAX TRACKING ---------- */
-$(document).ajaxSend(function () {
-    is_request_completed++;
-    updateSubmitButton();
-});
+        /* ---------- BUTTON UI HANDLER ---------- */
+        function updateSubmitButton() {
+            if (is_request_completed > 0) {
+                $('.submitNext').prop('disabled', true);
+                $('.submitNext').addClass('disabled');
+                $('#saveNextBtn .btn-text').addClass('d-none');
+                $('#saveNextBtn .btn-loader').removeClass('d-none');
+            } else {
+                $('.submitNext').prop('disabled', false);
+                $('.submitNext').removeClass('disabled');
+                $('#saveNextBtn .btn-text').removeClass('d-none');
+                $('#saveNextBtn .btn-loader').addClass('d-none');
+            }
+        }
 
-$(document).ajaxComplete(function () {
-    is_request_completed = Math.max(0, is_request_completed - 1);
-    updateSubmitButton();
-});
+        /* ---------- JQUERY AJAX TRACKING ---------- */
+        $(document).ajaxSend(function() {
+            is_request_completed++;
+            updateSubmitButton();
+        });
 
-/* ---------- FETCH TRACKING (GLOBAL OVERRIDE) ---------- */
-(function () {
-    const originalFetch = window.fetch;
+        $(document).ajaxComplete(function() {
+            is_request_completed = Math.max(0, is_request_completed - 1);
+            updateSubmitButton();
+        });
 
-    window.fetch = function (...args) {
-        is_request_completed++;
-        updateSubmitButton();
+        /* ---------- FETCH TRACKING (GLOBAL OVERRIDE) ---------- */
+        (function() {
+            const originalFetch = window.fetch;
 
-        return originalFetch.apply(this, args)
-            .catch(err => {
-                throw err;
-            })
-            .finally(() => {
-                is_request_completed = Math.max(0, is_request_completed - 1);
+            window.fetch = function(...args) {
+                is_request_completed++;
                 updateSubmitButton();
-            });
-    };
-})();
 
-/* ---------- SAFETY CHECK (OPTIONAL) ---------- */
-setInterval(updateSubmitButton, 3000);
+                return originalFetch.apply(this, args)
+                    .catch(err => {
+                        throw err;
+                    })
+                    .finally(() => {
+                        is_request_completed = Math.max(0, is_request_completed - 1);
+                        updateSubmitButton();
+                    });
+            };
+        })();
 
+        /* ---------- SAFETY CHECK (OPTIONAL) ---------- */
+        setInterval(updateSubmitButton, 3000);
     </script>
 
 

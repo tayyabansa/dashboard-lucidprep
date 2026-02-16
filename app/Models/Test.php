@@ -23,7 +23,8 @@ class Test extends Model
         'selected_topics',
         'num_of_passages',
         'wp_test',
-        'status'
+        'status',
+        'exam_type',
     ];
 
     protected $casts = [

@@ -15,6 +15,7 @@ use App\Http\Controllers\DIDController;
 use App\Http\Controllers\AvatarTTSController;
 use App\Http\Controllers\CrudController;
 use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\Mail;
 
 
 /*
@@ -28,6 +29,15 @@ use Illuminate\Support\Facades\Crypt;
 |
 */
 
+Route::get('/test-mail', function () {
+
+    Mail::raw('This is test mail from Laravel Route', function ($message) {
+        $message->to('tayyableavecode@gmail.com')
+                ->subject('Test Mail');
+    });
+
+    return "Mail Sent Successfully";
+});
 
 Route::get('/user/create', [CrudController::class, 'index']);
 Route::post('/user/create', [CrudController::class, 'create'])->name('user.create');
@@ -59,7 +69,7 @@ Route::middleware(['auth:admin'])->group(function () {
         Route::get('/fetch-question-counts/{subject}', [TestController::class, 'fetchQuestionCounts'])->name('questions.counts');
         Route::get('/launch-test/{user_id}/{test_id}', [TestController::class, 'launched'])->name('test.launched');
         Route::post('/launch-test/{test_id}/{question_id}', [TestController::class, 'submitAnswer'])->name('launch-test');
-         Route::post('/english-bulk-submit/{test_id}', [TestController::class, 'englishBulkSubmit'])->name('english.bulk.submit');
+        Route::post('/english-bulk-submit/{test_id}', [TestController::class, 'englishBulkSubmit'])->name('english.bulk.submit');
         Route::post('/mark-question-seen', [TestController::class, 'markQuestionSeen'])->name('markQuestionSeen');
         Route::post('/bookmark-question', [TestController::class, 'bookmarkQuestion'])->name('bookmark.question');
         Route::get('/check-bookmark', [TestController::class, 'checkBookmark'])->name('check.bookmark');
@@ -72,19 +82,13 @@ Route::middleware(['auth:admin'])->group(function () {
         Route::get('/performance-reports', [ReportController::class, 'index'])->name('report.index');
         Route::get('/performance-graph', [PerformanceController::class, 'graphGet'])->name('performance.graph');
         Route::delete('suspendDestroy/tests/{id}', [TestController::class, 'suspendDestroy'])->name('tests.suspendDestroy');
-        
-
         Route::get('/test/result/{user_id}/{test_id}', [TestController::class, 'resultIndex'])->name('results.index');
         Route::get('/test/create', [TestController::class, 'createTest'])->name('test.create.subject');
-        
         Route::get('/fetch-tabs/{subject}', [TestController::class, 'fetchTabsCounts'])->name('fetch.tabs');
         Route::post('/create-test-manual', [TestController::class, 'createTestManual'])->name('create.test.manual');
 
-
-       
-
-
-    });
+    }
+    );
 
     Route::prefix('resources')->group(function () {
         Route::get('/study-plan', [StudyPlanController::class, 'index'])->name('study.plan');

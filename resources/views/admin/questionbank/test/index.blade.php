@@ -1,103 +1,48 @@
 @extends('admin.layouts.app')
 @section('title', 'Luciderp | Create Test')
 @push('styles')
-    <style>
-        .nav-tabs li {
-            font-size: 15px;
-            padding: 0 10px;
-        }
-
-        input#tutorSwitch {
-            width: 3rem;
-        }
-
-        input#timedSwitch {
-            width: 3rem;
-        }
-
-        .btn-group-toggle .btn {
-            border-radius: 20px;
-            padding: 8px 20px;
-            font-size: 16px;
-            transition: 0.3s;
-        }
-
-        .btn-check:checked+.btn {
-            background-color: #fff;
-            border-color: #ddd;
-            color: black;
-            font-weight: bold;
-        }
-
-        .btn-group {
-            background-color: #e9ecef;
-            border-radius: 25px;
-            padding: 3px;
-        }
-
-        /* Custom Checkbox Styling */
-        .form-check-input {
-            width: 1.2rem;
-            height: 1.2rem;
-        }
-
-        /* Blue Badge Styling */
-        .badge-info {
-            background-color: #e8f0ff;
-            color: #1a73e8;
-            font-weight: 600;
-        }
-
-        /* Disabled Input */
-        .disabled-input {
-            background: #f8f9fa;
-            border: 1px solid #ddd;
-            text-align: center;
-            width: 50px;
-        }
-
-        .icon-size {
-            font-size: 15px;
-        }
-
-        .search_bar .dropdown-menu form {
-            margin-bottom: 0;
-        }
-
-        .card {
-            height: auto;
-        }
-
-    </style>
+    <link rel="stylesheet" href="{{ asset('css/test-index.css') }}">
 @endpush
 @section('content')
-    <div class="content-body">
-        <div class="container-fluid">
-            <div class="row page-titles mx-0">
-                <div class="col-sm-6 p-md-0">
-                    <div class="welcome-text">
-                        <h4>Create Test</h4>
+    <div @class(['content-body'])>
+        <div @class(['container-fluid'])>
+            <div @class(['row', 'page-titles', 'mx-0'])>
+                <div @class(['col-sm-6', 'p-md-0'])>
+                    <div @class(['welcome-text'])>
+                        <h4>Create Test tayyab</h4>
                     </div>
                 </div>
             </div>
+            <div class="d-flex gap-2 mb-3" id="examTabs">
+                <a href="{{ route('test', ['exam_type' => 'act']) }}"
+                    class="btn btn-outline-primary {{ $examType === 'ACT' ? 'active' : '' }}" data-exam="ACT">
+                    ACT
+                </a>
+
+                <a href="{{ route('test', ['exam_type' => 'sat']) }}"
+                    class="btn btn-outline-primary {{ $examType === 'SAT' ? 'active' : '' }}" data-exam="SAT">
+                    SAT
+                </a>
+            </div>
             @if (session('error'))
-                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <div @class(['alert', 'alert-danger', 'alert-dismissible', 'fade', 'show']) role="alert">
                     {{ session('error') }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    <button type="button" @class(['btn-close']) data-bs-dismiss="alert" aria-label="Close"></button>
                 </div>
             @endif
 
-            <div class="row">
-                <div class="col-xl-12">
-                    <div class="card">
-                        <div class="card-body">
+            <div @class(['row'])>
+                <div @class(['col-xl-12'])>
+                    <div @class(['card'])>
+                        <div @class(['card-body'])>
                             <!-- Nav tabs -->
-                            <div class="custom-tab-1">
-                                <ul class="nav nav-tabs" id="dynamicTabs">
+                            <div @class(['custom-tab-1'])>
+                                <ul @class(['nav', 'nav-tabs']) id="dynamicTabs">
                                     <!-- Tabs will be dynamically inserted here -->
                                     <input type="hidden" id="active_tab" name="type" value="">
+                                    <input type="hidden" id="exam_type" value="{{ $examType }}">
                                 </ul>
-                                <div class="tab-content">
+                                <div @class(['tab-content'])>
                                     <!-- Tab content will be dynamically inserted here -->
                                 </div>
                             </div>
@@ -136,16 +81,25 @@
             // Function to load tabs from API
             function loadTabs() {
                 $.ajax({
-                    url: "{{ route('fetch.tabs', ['subject' => 'all']) }}",
+                    url: "{{ route('fetch.tabs', ['subject' => 'all']) }}?exam_type={{ strtolower($examType) }}",
                     type: 'GET',
                     success: function(response) {
                         // console.log("API Response:", response);
+                        const examType = $('#exam_type').val(); // ACT / SAT
                         const tabsContainer = $('#dynamicTabs');
                         const tabContentContainer = $('.tab-content');
-                        tabsContainer.empty(); // Clear existing tabs
-                        tabContentContainer.empty(); // Clear existing tab content
 
-                        response.forEach((course, index) => {
+                        // 🔥 HARD RESET
+                        tabsContainer.empty();
+                        tabContentContainer.empty();
+
+                        // ✅ FILTER COURSES BASED ON EXAM TYPE
+                        let filteredCourses = response.filter(course => {
+                            return course.exam_type === examType;
+                        });
+
+                        // ✅ RENDER FILTERED COURSES
+                        filteredCourses.forEach((course, index) => {
                             const tabId = `tab${index + 1}`;
                             const isActive = index === 0 ? 'active' : '';
                             const subjectType = course.title;
@@ -158,8 +112,8 @@
 
                             // Create tab item
                             const tabHtml = `
-                            <li class="nav-item">
-                                <a class="nav-link ${isActive}" data-bs-toggle="tab" href="#${tabId}" data-type="${subjectType}">
+                            <li @class(['nav-item'])>
+                                <a @class(['nav-link', '${isActive}']) data-bs-toggle="tab" href="#${tabId}" data-type="${subjectType}">
                                     ${subjectType}
                                 </a>
                             </li>
@@ -169,40 +123,47 @@
                             // Create corresponding tab content
                             const tabContentHtml = `
                             <div class="tab-pane fade ${isActive ? 'show active' : ''}" id="${tabId}" role="tabpanel" data-type="${subjectType}">
-                                <div class="row pt-4">
-                                    <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12">
-                                        <div class="card">
-                                            <div class="card-body">
-                                                <div class="accordion accordion-primary" id="accordion-${tabId}">
+                                <div @class(['row', 'pt-4'])>
+                                    <div @class(['col-xl-12', 'col-lg-12', 'col-md-12', 'col-sm-12'])>
+                                        <div @class(['card'])>
+                                            <div @class(['card-body'])>
+                                                <div @class(['accordion', 'accordion-primary']) id="accordion-${tabId}">
                                                     <!-- Quick Section -->
-                                                    <div class="accordion-item">
-                                                        <h2 class="accordion-header">
-                                                            <button class="accordion-button" type="button"
+                                                    <div @class(['accordion-item'])>
+                                                        <h2 @class(['accordion-header'])>
+                                                            <button @class(['accordion-button']) type="button"
                                                                 data-bs-toggle="collapse"
                                                                 data-bs-target="#default-collapseOne-${tabId}"
                                                                 aria-expanded="true"
                                                                 aria-controls="default-collapseOne-${tabId}">
-                                                                Quick <i class="fa fa-info-circle ml-1 info-icon cursor mx-2"></i>
+                                                                Quick <i @class([
+                                                                    'fa',
+                                                                    'fa-info-circle',
+                                                                    'ml-1',
+                                                                    'info-icon',
+                                                                    'cursor',
+                                                                    'mx-2',
+                                                                ])></i>
                                                             </button>
                                                         </h2>
                                                         <div id="default-collapseOne-${tabId}"
-                                                            class="accordion-collapse collapse show"
+                                                            @class(['accordion-collapse', 'collapse', 'show'])
                                                             data-bs-parent="#accordion-${tabId}">
-                                                            <div class="accordion-body">
-                                                                <div class="row">
-                                                                    <div class="col-md-2">
-                                                                        <a href="" class="btn btn-primary btn-md start-test-btn" data-subject="${subjectType}">START TEST</a>
+                                                            <div @class(['accordion-body'])>
+                                                                <div @class(['row'])>
+                                                                    <div @class(['col-md-2'])>
+                                                                        <a href="" @class(['btn', 'btn-primary', 'btn-md', 'start-test-btn']) data-subject="${subjectType}">START TEST</a>
                                                                     </div>
-                                                                    <div class="col-md-1">
-                                                                        <div class="form-group">
-                                                                            <input type="text" class="form-control max_number" id="num_of_passages_${subjectType.toLowerCase()}" value="">
+                                                                    <div @class(['col-md-1'])>
+                                                                        <div @class(['form-group'])>
+                                                                            <input type="text" @class(['form-control', 'max_number']) id="num_of_passages_${subjectType.toLowerCase()}" value="">
                                                                         </div>
                                                                     </div>
-                                                                    <div class="col-md-2">
-                                                                        <div class="form-group mt-2">
+                                                                    <div @class(['col-md-2'])>
+                                                                        <div @class(['form-group', 'mt-2'])>
                                                                             <label for="max-passages">
                                                                                 Max Passages
-                                                                                <a href="javascript:void(0)" class="badge badge-circle badge-outline-dark" id="max_passages_badge_${subjectType.toLowerCase()}">0</a>
+                                                                                <a href="javascript:void(0)" @class(['badge', 'badge-circle', 'badge-outline-dark']) id="max_passages_badge_${subjectType.toLowerCase()}">0</a>
                                                                             </label>
                                                                         </div>
                                                                     </div>
@@ -212,32 +173,46 @@
                                                     </div>
                                                     
                                                     <!-- Personalize Section -->
-                                                    <div class="accordion-item">
-                                                        <h2 class="accordion-header">
-                                                            <button class="accordion-button" type="button"
+                                                    <div @class(['accordion-item'])>
+                                                        <h2 @class(['accordion-header'])>
+                                                            <button @class(['accordion-button']) type="button"
                                                                 data-bs-toggle="collapse"
                                                                 data-bs-target="#default-collapseTwo-${tabId}"
                                                                 aria-expanded="true"
                                                                 aria-controls="default-collapseTwo-${tabId}">
-                                                                Personalize <i class="fa fa-info-circle ml-1 info-icon cursor mx-2"></i>
+                                                                Personalize <i @class([
+                                                                    'fa',
+                                                                    'fa-info-circle',
+                                                                    'ml-1',
+                                                                    'info-icon',
+                                                                    'cursor',
+                                                                    'mx-2',
+                                                                ])></i>
                                                             </button>
                                                         </h2>
                                                         <div id="default-collapseTwo-${tabId}"
-                                                            class="accordion-collapse collapse show"
+                                                            @class(['accordion-collapse', 'collapse', 'show'])
                                                             data-bs-parent="#accordion-${tabId}">
-                                                            <form class="createTestForm" data-subject="${subjectType}">
-                                                                <div class="accordion-body">
+                                                            <form @class(['createTestForm']) data-subject="${subjectType}">
+                                                                <div @class(['accordion-body'])>
                                                                     <!-- Test Mode Section -->
-                                                                    <div class="accordion-body">
-                                                                        <h4>Test Mode <i class="fa fa-info-circle ml-1 info-icon cursor mx-2"></i></h4>
-                                                                        <div class="mode d-flex gap-4 align-items-center">
-                                                                            <div class="form-check form-switch">
-                                                                                <input class="form-check-input big" type="checkbox" id="tutorSwitch-${tabId}" name="test_mode[]" value="tutor" checked>
-                                                                                <label class="form-check-label" for="tutorSwitch-${tabId}">Tutor</label>
+                                                                    <div @class(['accordion-body'])>
+                                                                        <h4>Test Mode <i @class([
+                                                                            'fa',
+                                                                            'fa-info-circle',
+                                                                            'ml-1',
+                                                                            'info-icon',
+                                                                            'cursor',
+                                                                            'mx-2',
+                                                                        ])></i></h4>
+                                                                        <div @class(['mode', 'd-flex', 'gap-4', 'align-items-center'])>
+                                                                            <div @class(['form-check', 'form-switch'])>
+                                                                                <input @class(['form-check-input', 'big']) type="checkbox" id="tutorSwitch-${tabId}" name="test_mode[]" value="tutor" checked>
+                                                                                <label @class(['form-check-label']) for="tutorSwitch-${tabId}">Tutor</label>
                                                                             </div>
-                                                                            <div class="form-check form-switch">
-                                                                                <input class="form-check-input big" type="checkbox" id="timedSwitch-${tabId}" name="test_mode[]" value="timed">
-                                                                                <label class="form-check-label" for="timedSwitch-${tabId}">Timed</label>
+                                                                            <div @class(['form-check', 'form-switch'])>
+                                                                                <input @class(['form-check-input', 'big']) type="checkbox" id="timedSwitch-${tabId}" name="test_mode[]" value="timed">
+                                                                                <label @class(['form-check-label']) for="timedSwitch-${tabId}">Timed</label>
                                                                             </div>
                                                                         </div>
                                                                     </div>
@@ -245,59 +220,66 @@
                                                                     <hr>
                                                                     
                                                                     <!-- Question Mode Section -->
-                                                                    <div class="d-flex align-items-center gap-3">
-                                                                        <strong>Question Mode <i class="fa fa-info-circle ml-1 info-icon cursor mx-2"></i></strong>
-                                                                        <span class="text-muted fst-italic">Total Available</span>
-                                                                        <a href="#" class="text-primary fw-bold question-count">0P / 0Q</a>
+                                                                    <div @class(['d-flex', 'align-items-center', 'gap-3'])>
+                                                                        <strong>Question Mode <i @class([
+                                                                            'fa',
+                                                                            'fa-info-circle',
+                                                                            'ml-1',
+                                                                            'info-icon',
+                                                                            'cursor',
+                                                                            'mx-2',
+                                                                        ])></i></strong>
+                                                                        <span @class(['text-muted', 'fst-italic'])>Total Available</span>
+                                                                        <a href="#" @class(['text-primary', 'fw-bold', 'question-count'])>0P / 0Q</a>
                                                                     </div>
 
-                                                                    <div class="col-xl-12">
-                                                                        <div class="card">
-                                                                            <div class="card-body">
-                                                                                <ul class="nav nav-pills mb-4 light">
-                                                                                    <li class="nav-item">
-                                                                                        <a href="#navpills-1-${tabId}" class="nav-link active" data-bs-toggle="tab" aria-expanded="false" name="question_mode" value="standard">Standard</a>
+                                                                    <div @class(['col-xl-12'])>
+                                                                        <div @class(['card'])>
+                                                                            <div @class(['card-body'])>
+                                                                                <ul @class(['nav', 'nav-pills', 'mb-4', 'light'])>
+                                                                                    <li @class(['nav-item'])>
+                                                                                        <a href="#navpills-1-${tabId}" @class(['nav-link', 'active']) data-bs-toggle="tab" aria-expanded="false" name="question_mode" value="standard">Standard</a>
                                                                                     </li>
-                                                                                    <li class="nav-item">
-                                                                                        <a href="#navpills-2-${tabId}" class="nav-link" data-bs-toggle="tab" aria-expanded="false" name="question_mode" value="custom">Custom</a>
+                                                                                    <li @class(['nav-item'])>
+                                                                                        <a href="#navpills-2-${tabId}" @class(['nav-link']) data-bs-toggle="tab" aria-expanded="false" name="question_mode" value="custom">Custom</a>
                                                                                     </li>
                                                                                 </ul>
-                                                                                <div class="tab-content">
-                                                                                    <div id="navpills-1-${tabId}" class="tab-pane fade show active">
-                                                                                        <div class="row">
-                                                                                            <div class="col-md-12">
+                                                                                <div @class(['tab-content'])>
+                                                                                    <div id="navpills-1-${tabId}" @class(['tab-pane', 'fade', 'show', 'active'])>
+                                                                                        <div @class(['row'])>
+                                                                                            <div @class(['col-md-12'])>
                                                                                                 <!-- Select Type Section -->
-                                                                                                <div class="my-3">
-                                                                                                    <label class="fw-bold">Select Type</label>
-                                                                                                    <div class="d-flex flex-wrap gap-3 mt-2">
-                                                                                                        <div class="form-check">
-                                                                                                            <input class="form-check-input type-checkbox" type="checkbox" name="type[]" value="unused" id="unused-${tabId}">
-                                                                                                            <label class="form-check-label" for="unused-${tabId}">
-                                                                                                                Unused <span class="badge badge-info">0P / 0Q</span>
+                                                                                                <div @class(['my-3'])>
+                                                                                                    <label @class(['fw-bold'])>Select Type</label>
+                                                                                                    <div @class(['d-flex', 'flex-wrap', 'gap-3', 'mt-2'])>
+                                                                                                        <div @class(['form-check'])>
+                                                                                                            <input @class(['form-check-input', 'type-checkbox']) type="checkbox" name="type[]" value="unused" id="unused-${tabId}">
+                                                                                                            <label @class(['form-check-label']) for="unused-${tabId}">
+                                                                                                                Unused <span @class(['badge', 'badge-info'])>0P / 0Q</span>
                                                                                                             </label>
                                                                                                         </div>
-                                                                                                        <div class="form-check">
-                                                                                                            <input class="form-check-input type-checkbox" type="checkbox" name="type[]" value="incorrect" id="incorrect-${tabId}">
-                                                                                                            <label class="form-check-label" for="incorrect-${tabId}">
-                                                                                                                Incorrect <span class="badge badge-info">0P / 0Q</span>
+                                                                                                        <div @class(['form-check'])>
+                                                                                                            <input @class(['form-check-input', 'type-checkbox']) type="checkbox" name="type[]" value="incorrect" id="incorrect-${tabId}">
+                                                                                                            <label @class(['form-check-label']) for="incorrect-${tabId}">
+                                                                                                                Incorrect <span @class(['badge', 'badge-info'])>0P / 0Q</span>
                                                                                                             </label>
                                                                                                         </div>
-                                                                                                        <div class="form-check">
-                                                                                                            <input class="form-check-input type-checkbox" type="checkbox" name="type[]" value="marked" id="marked-${tabId}">
-                                                                                                            <label class="form-check-label" for="marked-${tabId}">
-                                                                                                                Marked <span class="badge badge-info">0P / 0Q</span>
+                                                                                                        <div @class(['form-check'])>
+                                                                                                            <input @class(['form-check-input', 'type-checkbox']) type="checkbox" name="type[]" value="marked" id="marked-${tabId}">
+                                                                                                            <label @class(['form-check-label']) for="marked-${tabId}">
+                                                                                                                Marked <span @class(['badge', 'badge-info'])>0P / 0Q</span>
                                                                                                             </label>
                                                                                                         </div>
-                                                                                                        <div class="form-check">
-                                                                                                            <input class="form-check-input type-checkbox" type="checkbox" name="type[]" value="omitted" id="omitted-${tabId}">
-                                                                                                            <label class="form-check-label" for="omitted-${tabId}">
-                                                                                                                Omitted <span class="badge badge-info">0P / 0Q</span>
+                                                                                                        <div @class(['form-check'])>
+                                                                                                            <input @class(['form-check-input', 'type-checkbox']) type="checkbox" name="type[]" value="omitted" id="omitted-${tabId}">
+                                                                                                            <label @class(['form-check-label']) for="omitted-${tabId}">
+                                                                                                                Omitted <span @class(['badge', 'badge-info'])>0P / 0Q</span>
                                                                                                             </label>
                                                                                                         </div>
-                                                                                                        <div class="form-check">
-                                                                                                            <input class="form-check-input type-checkbox" type="checkbox" name="type[]" value="correct" id="correct-${tabId}">
-                                                                                                            <label class="form-check-label" for="correct-${tabId}">
-                                                                                                                Correct <span class="badge badge-info">0P / 0Q</span>
+                                                                                                        <div @class(['form-check'])>
+                                                                                                            <input @class(['form-check-input', 'type-checkbox']) type="checkbox" name="type[]" value="correct" id="correct-${tabId}">
+                                                                                                            <label @class(['form-check-label']) for="correct-${tabId}">
+                                                                                                                Correct <span @class(['badge', 'badge-info'])>0P / 0Q</span>
                                                                                                             </label>
                                                                                                         </div>
                                                                                                     </div>
@@ -306,25 +288,25 @@
                                                                                                 <hr>
                                                                                                 
                                                                                                 <!-- Difficulty Level Section -->
-                                                                                                <div class="my-3">
-                                                                                                    <label class="fw-bold">Difficulty Level</label>
-                                                                                                    <div class="d-flex flex-wrap gap-3 mt-2">
-                                                                                                        <div class="form-check">
-                                                                                                            <input class="form-check-input difficulty-checkbox" type="checkbox" name="difficulty_levels[]" value="easy" id="easy-${tabId}">
-                                                                                                            <label class="form-check-label" for="easy-${tabId}">
-                                                                                                                Easy <span class="badge badge-info">0P / 0Q</span>
+                                                                                                <div @class(['my-3'])>
+                                                                                                    <label @class(['fw-bold'])>Difficulty Level</label>
+                                                                                                    <div @class(['d-flex', 'flex-wrap', 'gap-3', 'mt-2'])>
+                                                                                                        <div @class(['form-check'])>
+                                                                                                            <input @class(['form-check-input', 'difficulty-checkbox']) type="checkbox" name="difficulty_levels[]" value="easy" id="easy-${tabId}">
+                                                                                                            <label @class(['form-check-label']) for="easy-${tabId}">
+                                                                                                                Easy <span @class(['badge', 'badge-info'])>0P / 0Q</span>
                                                                                                             </label>
                                                                                                         </div>
-                                                                                                        <div class="form-check">
-                                                                                                            <input class="form-check-input difficulty-checkbox" type="checkbox" name="difficulty_levels[]" value="medium" id="medium-${tabId}">
-                                                                                                            <label class="form-check-label" for="medium-${tabId}">
-                                                                                                                Medium <span class="badge badge-info">0P / 0Q</span>
+                                                                                                        <div @class(['form-check'])>
+                                                                                                            <input @class(['form-check-input', 'difficulty-checkbox']) type="checkbox" name="difficulty_levels[]" value="medium" id="medium-${tabId}">
+                                                                                                            <label @class(['form-check-label']) for="medium-${tabId}">
+                                                                                                                Medium <span @class(['badge', 'badge-info'])>0P / 0Q</span>
                                                                                                             </label>
                                                                                                         </div>
-                                                                                                        <div class="form-check">
-                                                                                                            <input class="form-check-input difficulty-checkbox" type="checkbox" name="difficulty_levels[]" value="hard" id="hard-${tabId}">
-                                                                                                            <label class="form-check-label" for="hard-${tabId}">
-                                                                                                                Hard <span class="badge badge-info">0P / 0Q</span>
+                                                                                                        <div @class(['form-check'])>
+                                                                                                            <input @class(['form-check-input', 'difficulty-checkbox']) type="checkbox" name="difficulty_levels[]" value="hard" id="hard-${tabId}">
+                                                                                                            <label @class(['form-check-label']) for="hard-${tabId}">
+                                                                                                                Hard <span @class(['badge', 'badge-info'])>0P / 0Q</span>
                                                                                                             </label>
                                                                                                         </div>
                                                                                                     </div>
@@ -333,21 +315,21 @@
                                                                                                 <hr>
                                                                                                 
                                                                                                 <!-- Practice Type Section -->
-                                                                                                <div class="my-3">
-                                                                                                    <label class="fw-bold">Practice Type</label>
-                                                                                                    <div class="d-flex gap-3 mt-2">
-                                                                                                        <div class="form-check">
-                                                                                                            <input class="form-check-input practice-type" type="radio" name="practiceType" id="full-length-${tabId}" value="full-length" checked>
-                                                                                                            <label class="form-check-label" for="full-length-${tabId}">
+                                                                                                <div @class(['my-3'])>
+                                                                                                    <label @class(['fw-bold'])>Practice Type</label>
+                                                                                                    <div @class(['d-flex', 'gap-3', 'mt-2'])>
+                                                                                                        <div @class(['form-check'])>
+                                                                                                            <input @class(['form-check-input', 'practice-type']) type="radio" name="practiceType" id="full-length-${tabId}" value="full-length" checked>
+                                                                                                            <label @class(['form-check-label']) for="full-length-${tabId}">
                                                                                                                 Full-length ACT Passages 
-                                                                                                                <span class="badge badge-info">0P / 0Q</span>
+                                                                                                                <span @class(['badge', 'badge-info'])>0P / 0Q</span>
                                                                                                             </label>
                                                                                                         </div>
-                                                                                                        <div class="form-check">
-                                                                                                            <input class="form-check-input practice-type" type="radio" name="practiceType" id="skill-based-${tabId}" value="skill-based">
-                                                                                                            <label class="form-check-label" for="skill-based-${tabId}">
+                                                                                                        <div @class(['form-check'])>
+                                                                                                            <input @class(['form-check-input', 'practice-type']) type="radio" name="practiceType" id="skill-based-${tabId}" value="skill-based">
+                                                                                                            <label @class(['form-check-label']) for="skill-based-${tabId}">
                                                                                                                 Skill-Based 
-                                                                                                                <span class="badge badge-info">0P / 0Q</span>
+                                                                                                                <span @class(['badge', 'badge-info'])>0P / 0Q</span>
                                                                                                             </label>
                                                                                                         </div>
                                                                                                     </div>
@@ -356,8 +338,8 @@
                                                                                                 <hr>
                                                                                                 
                                                                                                 <!-- Subjects Selection -->
-                                                                                                <div class="my-3">
-                                                                                                    <div class="ms-3 mt-2 subject-checkboxes">
+                                                                                                <div @class(['my-3'])>
+                                                                                                    <div @class(['ms-3', 'mt-2', 'subject-checkboxes'])>
                                                                                                         <!-- Subject checkboxes will be inserted here -->
                                                                                                     </div>
                                                                                                 </div>
@@ -365,51 +347,56 @@
                                                                                                 <hr>
                                                                                                 
                                                                                                 <!-- Number of Questions Section -->
-                                                                                                <div class="mainpassage my-4">
-                                                                                                    <label class="fw-bold mb-3">No. of Questions <i class="bi bi-info-circle"></i></label>
-                                                                                                    <div class="d-flex align-items-center gap-2">
-                                                                                                        <input type="text" class="form-control text-center num_of_questions" name="num_of_questions" style="width: 60px;" value="">
-                                                                                                        <span class="text-muted">Max allowed per test</span>
-                                                                                                        <a href="javascript:void(0)" class="badge badge-circle badge-outline-dark badge-total-q">0</a>
+                                                                                                <div @class(['mainpassage', 'my-4'])>
+                                                                                                    <label @class(['fw-bold', 'mb-3'])>No. of Questions <i @class(['bi', 'bi-info-circle'])></i></label>
+                                                                                                    <div @class(['d-flex', 'align-items-center', 'gap-2'])>
+                                                                                                        <input type="text" @class(['form-control', 'text-center', 'num_of_questions']) name="num_of_questions" style="width: 60px;" value="">
+                                                                                                        <span @class(['text-muted'])>Max allowed per test</span>
+                                                                                                        <a href="javascript:void(0)" @class([
+                                                                                                            'badge',
+                                                                                                            'badge-circle',
+                                                                                                            'badge-outline-dark',
+                                                                                                            'badge-total-q',
+                                                                                                        ])>0</a>
                                                                                                     </div>
                                                                                                 </div>
                                                                                                 
                                                                                                 <!-- Generate Test Button -->
-                                                                                                <button type="submit" class="btn btn-primary">Generate Test</button>
+                                                                                                <button type="submit" @class(['btn', 'btn-primary'])>Generate Test1</button>
                                                                                             </div>
                                                                                         </div>
                                                                                     </div>
                                                                                     
                                                                                     <!-- Custom Mode Tab Content -->
-                                                                                    <div id="navpills-2-${tabId}" class="tab-pane fade">
-                                                                                        <div class="row">
-                                                                                            <div class="col-md-12">
-                                                                                                <div class="row">
-                                                                                                    <div class="col-md-7">
-                                                                                                        <h5 class="fw-bold">Instructions on using Custom mode</h5>
-                                                                                                        <p class="text-muted">
+                                                                                    <div id="navpills-2-${tabId}" @class(['tab-pane', 'fade'])>
+                                                                                        <div @class(['row'])>
+                                                                                            <div @class(['col-md-12'])>
+                                                                                                <div @class(['row'])>
+                                                                                                    <div @class(['col-md-7'])>
+                                                                                                        <h5 @class(['fw-bold'])>Instructions on using Custom mode</h5>
+                                                                                                        <p @class(['text-muted'])>
                                                                                                             You may enter question ID numbers, separated by commas, into the field to create a custom test.<br>
                                                                                                             Question ID numbers must be currently active in the Question bank and belong to the selected subject area in order to be added.<br>
                                                                                                             When entering questions from a question set, all questions from that set must be included and placed in the correct order.<br>
                                                                                                             If you are missing questions from the set, the system will provide a list of the missing question IDs.
                                                                                                         </p>
                                                                                                     </div>
-                                                                                                    <div class="col-md-5">
-                                                                                                        <label class="fw-bold">Retrieve Questions of a Test #</label>
-                                                                                                        <div class="input-group mb-2">
-                                                                                                            <input type="text" class="form-control test-id-input" placeholder="Enter Test Id">
-                                                                                                            <button class="btn btn-primary" type="button">RETRIEVE</button>
+                                                                                                    <div @class(['col-md-5'])>
+                                                                                                        <label @class(['fw-bold'])>Retrieve Questions of a Test #</label>
+                                                                                                        <div @class(['input-group', 'mb-2'])>
+                                                                                                            <input type="text" @class(['form-control', 'test-id-input']) placeholder="Enter Test Id">
+                                                                                                            <button @class(['btn', 'btn-primary']) type="button">RETRIEVE</button>
                                                                                                         </div>
-                                                                                                        <p class="text-danger test-id-error mt-1" style="display: none;"></p>
+                                                                                                        <p @class(['text-danger', 'test-id-error', 'mt-1']) style="display: none;"></p>
                                                                                                         
-                                                                                                        <label class="fw-bold mt-2">Enter Question IDs separated by comma (,)</label>
-                                                                                                        <textarea class="form-control" rows="4" placeholder="Enter question IDs..."></textarea>
+                                                                                                        <label @class(['fw-bold', 'mt-2'])>Enter Question IDs separated by comma (,)</label>
+                                                                                                        <textarea @class(['form-control']) rows="4" placeholder="Enter question IDs..."></textarea>
                                                                                                     </div>
                                                                                                 </div>
                                                                                                 
                                                                                                 <!-- Generate Test Button for Custom Mode -->
-                                                                                                <div class="mt-3">
-                                                                                                    <button class="btn btn-primary generate-test-btn" type="button">Generate Test</button>
+                                                                                                <div @class(['mt-3'])>
+                                                                                                    <button @class(['btn', 'btn-primary', 'generate-test-btn']) type="button">Generate Test2</button>
                                                                                                 </div>
                                                                                             </div>
                                                                                         </div>
@@ -433,8 +420,8 @@
                         });
 
                         // Set initial active tab value
-                        if (response.length > 0) {
-                            const initialSubject = response[0].title;
+                        if (filteredCourses.length > 0) {
+                            const initialSubject = filteredCourses[0].title;
                             $('#active_tab').val(initialSubject);
                             loadQuestionCounts(initialSubject);
                         }
@@ -462,6 +449,18 @@
                 const form = $(this);
                 const activeTab = $('#dynamicTabs .nav-link.active').first();
                 const subjectType = activeTab.attr('data-type'); // e.g. "math", "science", etc.
+                // ✅ exam_type properly fetch karo
+                let examType = $('#exam_type').val();
+
+                // ✅ Agar undefined hai to URL se lo
+                if (!examType || examType === 'undefined') {
+                    const urlParams = new URLSearchParams(window.location.search);
+                    examType = urlParams.get('exam_type') || 'ACT';
+                }
+                // ✅ Uppercase me convert karo
+                examType = examType.toUpperCase();
+
+                console.log('Sending exam_type:', examType); // ✅ Debug ke liye
 
                 let selectedSubjects = form.find("input[name='selected_subjects[]']:checked").map(function() {
                     return this.value;
@@ -474,7 +473,8 @@
                 // Add parent subject for each checked topic if not already in selectedSubjects
                 form.find("input[name='selected_topic[]']:checked").each(function() {
                     // Find the parent accordion-item (subject block)
-                    const subjectCheckbox = $(this).closest('.accordion-item').find("input[name='selected_subjects[]']");
+                    const subjectCheckbox = $(this).closest('.accordion-item').find(
+                        "input[name='selected_subjects[]']");
                     const subjectValue = subjectCheckbox.val();
                     if (subjectValue && !selectedSubjects.includes(subjectValue)) {
                         selectedSubjects.push(subjectValue);
@@ -510,6 +510,7 @@
                 // ✅ Build form data only after validation
                 const formData = {
                     subject_type: subjectType,
+                    exam_type: examType,
                     test_mode: form.find("input[name='test_mode[]']:checked").map(function() {
                         return this.value;
                     }).get(),
@@ -527,6 +528,7 @@
                     _token: "{{ csrf_token() }}"
                 };
 
+                console.log('Form Data being sent:', formData);
                 // AJAX submit
                 $.ajax({
                     url: "{{ route('tests.store') }}",
@@ -549,7 +551,7 @@
                                 if (inputField.length) {
                                     if (!inputField.next().hasClass("error-message")) {
                                         inputField.after(
-                                            `<div class="error-message text-danger">${message}</div>`
+                                            `<div @class(['error-message', 'text-danger'])>${message}</div>`
                                         );
                                     }
                                 }
@@ -570,6 +572,15 @@
                 const subjectType = activeTab.attr('data-type');
                 const numOfPassages = $(this).closest('.col-md-2').next('.col-md-1').find('input.max_number').val();
 
+                // ✅ exam_type properly fetch karo
+                let examType = $('#exam_type').val();
+                if (!examType || examType === 'undefined') {
+                    const urlParams = new URLSearchParams(window.location.search);
+                    examType = urlParams.get('exam_type') || 'ACT';
+                }
+                examType = examType.toUpperCase();
+
+                console.log('START TEST - Subject:', subjectType, 'Exam Type:', examType);
                 console.log("Active Tab Element:", activeTab);
                 console.log("Active Tab Data Type:", activeTab.attr('data-type'));
                 console.log("Subject Type:", subjectType);
@@ -595,6 +606,7 @@
                     data: {
                         _token: "{{ csrf_token() }}",
                         subject_type: subjectType,
+                        exam_type: examType,
                         num_of_passages: numOfPassages
                     },
                     success: function(response) {
@@ -652,8 +664,23 @@
 
         function loadQuestionCounts(subject) {
             document.getElementById('preloader').style.display = 'block';
+            // ✅ Method 1: Hidden input se
+            let examTypeRaw = $('#exam_type').val();
+
+            // ✅ Method 2: Agar undefined hai to URL se lo
+            if (!examTypeRaw || examTypeRaw === 'undefined') {
+                const urlParams = new URLSearchParams(window.location.search);
+                examTypeRaw = urlParams.get('exam_type') || 'act';
+            }
+
+            console.log('exam_type raw:', examTypeRaw);
+
+            const examType = examTypeRaw.toLowerCase();
+            console.log('exam_type used in ajax:', examType);
+
             $.ajax({
-                url: "{{ route('questions.counts', ':subject') }}".replace(':subject', subject),
+                url: "{{ route('questions.counts', ':subject') }}"
+                    .replace(':subject', subject) + '?exam_type=' + examType,
                 type: "GET",
                 success: function(response) {
                     // console.log('Question counts response:', response);
@@ -680,12 +707,12 @@
                             if (sub === 'math') {
                                 // Math subject ke liye "Total Questions"
                                 labelInActiveTab.html(
-                                    'Total Questions <a href="javascript:void(0)" class="badge badge-circle badge-outline-dark" id="max_passages_badge_' +
+                                    'Total Questions <a href="javascript:void(0)" @class(['badge', 'badge-circle', 'badge-outline-dark']) id="max_passages_badge_' +
                                     sub + '">' + response.totalQuestions + '</a>');
                             } else {
                                 // Baaki sab ke liye "Max Passages"
                                 labelInActiveTab.html(
-                                    'Max Passages <a href="javascript:void(0)" class="badge badge-circle badge-outline-dark" id="max_passages_badge_' +
+                                    'Max Passages <a href="javascript:void(0)" @class(['badge', 'badge-circle', 'badge-outline-dark']) id="max_passages_badge_' +
                                     sub + '">' + response.passageCount + '</a>');
                             }
                         }
@@ -812,7 +839,7 @@
                             const total_passage = item.passage_count;
                             const subjectTopics = response.groupedTopics[subjectName] || [];
 
-                            let columnHtml = '<div class="col-md-6 mb-3">';
+                            let columnHtml = '<div @class(['col-md-6', 'mb-3'])>';
 
                             if (subjectTopics.length > 0) {
                                 const accordionId = `accordion_${subjectId}`;
@@ -820,33 +847,33 @@
                                 const collapseId = `collapse_${subjectId}`;
 
                                 columnHtml += `
-                                <div class="accordion" id="${accordionId}">
-                                    <div class="accordion-item">
-                                        <h2 class="accordion-header" id="${headingId}">
-                                            <button class="accordion-button d-flex align-items-center" type="button"
+                                <div @class(['accordion']) id="${accordionId}">
+                                    <div @class(['accordion-item'])>
+                                        <h2 @class(['accordion-header']) id="${headingId}">
+                                            <button @class(['accordion-button', 'd-flex', 'align-items-center']) type="button"
                                                 data-bs-toggle="collapse" data-bs-target="#${collapseId}"
                                                 aria-expanded="true" aria-controls="${collapseId}">
-                                                <input type="checkbox" class="me-2 subject-checkbox" id="${subjectId}" name="selected_subjects[]" value="${subjectName}">
-                                                <label for="${subjectId}" class="m-0">${subjectName}</label>
+                                                <input type="checkbox" @class(['me-2', 'subject-checkbox']) id="${subjectId}" name="selected_subjects[]" value="${subjectName}">
+                                                <label for="${subjectId}" @class(['m-0'])>${subjectName}</label>
                                             </button>
                                         </h2>
                                     
-                                        <div id="${collapseId}" class="accordion-collapse collapse show" aria-labelledby="${headingId}">
-                                            <div class="accordion-body">
-                                                <div class="row">
+                                        <div id="${collapseId}" @class(['accordion-collapse', 'collapse', 'show']) aria-labelledby="${headingId}">
+                                            <div @class(['accordion-body'])>
+                                                <div @class(['row'])>
                                                     ${subjectTopics.map((topic) => {
                                                         const topicId = topic.topic_name.toLowerCase().replace(/\s+/g, '_').replace(/[^\w\-]/g, '');
                                                         return `
-                                                                                                        <div class="mb-2">
-                                                                                                            <div class="form-check">
-                                                                                                                <input class="form-check-input" type="checkbox" id="${topicId}" name="selected_topic[]" value="${topic.topic_name}" data-q="${topic.total}">
-                                                                                                                <label class="form-check-label" for="">
-                                                                                                                    ${topic.topic_name}
-                                                                                                                    <span class="badge badge-info">${topic.passage_count}P / ${topic.total}Q</span>
-                                                                                                                </label>
-                                                                                                            </div>
-                                                                                                        </div>
-                                                                                                    `;
+                                                                                                                                                                                                                                                                                                                                                <div @class(['mb-2'])>
+                                                                                                                                                                                                                                                                                                                                                    <div @class(['form-check'])>
+                                                                                                                                                                                                                                                                                                                                                        <input @class(['form-check-input']) type="checkbox" id="${topicId}" name="selected_topic[]" value="${topic.topic_name}" data-q="${topic.total}">
+                                                                                                                                                                                                                                                                                                                                                        <label @class(['form-check-label']) for="">
+                                                                                                                                                                                                                                                                                                                                                            ${topic.topic_name}
+                                                                                                                                                                                                                                                                                                                                                            <span @class(['badge', 'badge-info'])>${topic.passage_count}P / ${topic.total}Q</span>
+                                                                                                                                                                                                                                                                                                                                                        </label>
+                                                                                                                                                                                                                                                                                                                                                    </div>
+                                                                                                                                                                                                                                                                                                                                                </div>
+                                                                                                                                                                                                                                                                                                                                            `;
                                                     }).join('')}
                                                 </div>
                                             </div>
@@ -857,11 +884,11 @@
                             } else {
                                 const isDisabled = total === 0 ? 'disabled' : '';
                                 columnHtml += `
-                                    <div class="form-check">
-                                        <input class="form-check-input subject-checkbox" name="selected_subjects[]" type="checkbox"
+                                    <div @class(['form-check'])>
+                                        <input @class(['form-check-input', 'subject-checkbox']) name="selected_subjects[]" type="checkbox"
                                             id="${subjectId}" value="${subjectName}" data-q="${total}" ${isDisabled}>
-                                        <label class="form-check-label text-muted" for="">      
-                                            ${subjectName} <span class="badge badge-info">${total_passage}P / ${total}Q</span>
+                                        <label @class(['form-check-label', 'text-muted']) for="">      
+                                            ${subjectName} <span @class(['badge', 'badge-info'])>${total_passage}P / ${total}Q</span>
                                         </label>
                                     </div>
                                 `;
@@ -872,7 +899,8 @@
                             rowHtml += columnHtml;
 
                             if ((index + 1) % 2 === 0 || index === filteredSubjects.length - 1) {
-                                container.append(`<div class="row">${rowHtml}</div>`);
+                                container.append(
+                                    `<div @class(['row'])>${rowHtml}</div>`);
                                 rowHtml = '';
                             }
                         });
@@ -1036,6 +1064,4 @@
             $(this).removeClass("is-invalid");
             $(this).closest(".tab-pane").find(".test-id-error").hide();
         });
-        
-        
     </script>
